@@ -11,3 +11,7 @@ build/
 coverage/
 *.pem
 *.key
+
+artifacts/
+__pycache__/
+test_snapshots/
