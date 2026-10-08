@@ -82,7 +82,11 @@ fn corridor_nomination_cancellation_requires_current_admin() {
     let f = Fixture::new();
     let client = f.client();
     let successor = Address::generate(&f.env);
-    f.auth(&f.admin, "propose_admin", (successor.clone(),).into_val(&f.env));
+    f.auth(
+        &f.admin,
+        "propose_admin",
+        (successor.clone(),).into_val(&f.env),
+    );
     client.propose_admin(&successor);
     assert_eq!(client.pending_admin(), Some(successor));
     f.env.mock_auths(&[]);
