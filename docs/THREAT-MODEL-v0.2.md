@@ -26,4 +26,4 @@ Privacy protocols require a specific anonymity set and threat model. Hidden send
 **Unknown until inspected:** contract events, calldata, encrypted note metadata, observer timing in Confidential Tokens/SPP.
 
 ## Go/no-go
-No mainnet value custody, issuer launch, real remittance, promotional privacy guarantee, or Drips financial distribution until tests, controls, and responsible maintenance contacts exist.
+No mainnet value custody, issuer launch, real remittance, or promotional privacy guarantees until tests, controls, and responsible maintenance contacts exist.
