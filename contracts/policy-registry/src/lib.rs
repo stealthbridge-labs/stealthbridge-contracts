@@ -11,6 +11,7 @@ const TTL_EXTEND: u32 = 30 * TTL_THRESHOLD;
 #[derive(Clone)]
 enum DataKey {
     Admin,
+    PendingAdmin,
     Paused,
     Rule(String),
 }
@@ -28,6 +29,8 @@ pub enum PolicyError {
     NotInitialized = 1,
     InvalidRevision = 2,
     StaleRevision = 3,
+    InvalidRuleId = 4,
+    NoPendingAdmin = 5,
 }
 #[contract]
 pub struct PolicyRegistry;
@@ -59,6 +62,33 @@ impl PolicyRegistry {
             .get(&DataKey::Admin)
             .ok_or(PolicyError::NotInitialized)
     }
+
+    /// Governance handover is two-phase: current admin nominates and future
+    /// admin must authorize acceptance with their own account.
+    pub fn pending_admin(env: Env) -> Option<Address> {
+        env.storage().instance().get(&DataKey::PendingAdmin)
+    }
+    pub fn propose_admin(env: Env, successor: Address) -> Result<(), PolicyError> {
+        require_admin(&env)?;
+        env.storage().instance().set(&DataKey::PendingAdmin, &successor);
+        extend_instance(&env);
+        Ok(())
+    }
+    pub fn cancel_admin_proposal(env: Env) -> Result<(), PolicyError> {
+        require_admin(&env)?;
+        env.storage().instance().remove(&DataKey::PendingAdmin);
+        extend_instance(&env);
+        Ok(())
+    }
+    pub fn accept_admin(env: Env) -> Result<(), PolicyError> {
+        let successor: Address = env.storage().instance().get(&DataKey::PendingAdmin)
+            .ok_or(PolicyError::NoPendingAdmin)?;
+        successor.require_auth();
+        env.storage().instance().set(&DataKey::Admin, &successor);
+        env.storage().instance().remove(&DataKey::PendingAdmin);
+        extend_instance(&env);
+        Ok(())
+    }
     pub fn is_paused(env: Env) -> bool {
         env.storage()
             .instance()
@@ -75,6 +105,9 @@ impl PolicyRegistry {
     /// Caller must validate the actual policy externally; this stores no oracle.
     pub fn set_rule(env: Env, id: String, record: PolicyRecord) -> Result<(), PolicyError> {
         require_admin(&env)?;
+        if id.is_empty() || id.len() > 128 {
+            return Err(PolicyError::InvalidRuleId);
+        }
         if record.revision == 0 {
             return Err(PolicyError::InvalidRevision);
         }
@@ -92,6 +125,7 @@ impl PolicyRegistry {
         Ok(())
     }
     pub fn get_rule(env: Env, id: String) -> Option<PolicyRecord> {
+        if id.is_empty() || id.len() > 128 { return None; }
         let key = DataKey::Rule(id);
         env.storage().persistent().get(&key)
     }
@@ -163,6 +197,44 @@ mod tests {
             },
         );
         assert!(!client.is_effective(&name));
+    }
+
+    #[test]
+    fn administrator_must_be_explicitly_accepted_and_nomination_can_cancel() {
+        let env=Env::default();
+        env.mock_all_auths();
+        let original=Address::generate(&env);
+        let successor=Address::generate(&env);
+        let contract=env.register(PolicyRegistry,(original.clone(),));
+        let client=PolicyRegistryClient::new(&env,&contract);
+        assert_eq!(client.pending_admin(),None);
+        assert_eq!(client.try_accept_admin(),Err(Ok(PolicyError::NoPendingAdmin)));
+        client.propose_admin(&successor);
+        assert_eq!(client.pending_admin(),Some(successor.clone()));
+        assert_eq!(client.admin(),original);
+        client.cancel_admin_proposal();
+        assert_eq!(client.pending_admin(),None);
+        client.propose_admin(&successor);
+        client.accept_admin();
+        assert_eq!(client.admin(),successor);
+        assert_eq!(client.pending_admin(),None);
+        env.mock_auths(&[]);
+        assert!(client.try_set_paused(&true).is_err());
+        assert!(client.try_cancel_admin_proposal().is_err());
+    }
+    #[test]
+    fn invalid_rule_identifiers_fail_closed() {
+        let env=Env::default();
+        env.mock_all_auths();
+        let admin=Address::generate(&env);
+        let contract=env.register(PolicyRegistry,(admin,));
+        let client=PolicyRegistryClient::new(&env,&contract);
+        let record=PolicyRecord{revision:1,enabled:true,public_commitment:BytesN::from_array(&env,&[4u8;32])};
+        for id in [String::from_str(&env,""),String::from_str(&env,&"x".repeat(129))] {
+            assert_eq!(client.try_set_rule(&id,&record),Err(Ok(PolicyError::InvalidRuleId)));
+            assert_eq!(client.get_rule(&id),None);
+            assert!(!client.is_effective(&id));
+        }
     }
     #[test]
     fn unauthorized_mutations_fail() {

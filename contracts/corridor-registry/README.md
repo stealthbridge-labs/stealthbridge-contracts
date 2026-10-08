@@ -20,3 +20,5 @@ Scoped authorization, TTL boundary/restoration-model tests, reproducible artifac
 and resource benchmarks are documented in [registry verification](../../docs/REGISTRY-VERIFICATION.md).
 No application events are emitted. Arguments and storage are public; never use
 participant or private-payment identifiers as corridor IDs.
+
+Opaque corridor IDs are constrained to 1–128 bytes. Invalid identifiers cannot be enabled; an invalid read is treated as disabled, never enabled.

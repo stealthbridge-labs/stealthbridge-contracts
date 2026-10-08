@@ -19,3 +19,7 @@ The contract does not validate the contents of a commitment or satisfy complianc
 ## Source
 
 [contracts/policy-registry/src/lib.rs](../contracts/policy-registry/src/lib.rs)
+
+## Recent governance hardening
+
+The PolicyRegistry now supports a **two-phase administrator transfer**, with `propose_admin(successor)`, `pending_admin()`, `cancel_admin_proposal()` and `accept_admin()`. The current administrator authorizes nomination/cancellation; the nominated account must authorize acceptance. Pending nominations confer no administration until accepted. Both registry contracts reject empty or overlong (more than 128-byte) opaque rule/corridor identifiers on writes and fail closed on invalid read identifiers. The policy's public commitment is **not** a verified user eligibility or ZK-proof check.

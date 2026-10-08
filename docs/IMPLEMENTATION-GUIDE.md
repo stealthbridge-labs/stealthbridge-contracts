@@ -41,3 +41,7 @@ When introducing an ABI change, update this repository's contract docs and sourc
 ## 5. What remains
 
 Zero-knowledge protocol feasibility, issuer-controlled token policy, real authorization, replay proofs, note storage/recovery, settlement/refund invariants, timelock/multisig governance, audit, upgrade policy, cost profiling, legitimate stablecoin and fiat partnerships. See [the roadmap](../ROADMAP.md), [threat model](THREAT-MODEL-v0.2.md), and [privacy feasibility matrix](PRIVACY-FEASIBILITY-MATRIX.md).
+
+## Recent governance hardening
+
+The PolicyRegistry now supports a **two-phase administrator transfer**, with `propose_admin(successor)`, `pending_admin()`, `cancel_admin_proposal()` and `accept_admin()`. The current administrator authorizes nomination/cancellation; the nominated account must authorize acceptance. Pending nominations confer no administration until accepted. Both registry contracts reject empty or overlong (more than 128-byte) opaque rule/corridor identifiers on writes and fail closed on invalid read identifiers. The policy's public commitment is **not** a verified user eligibility or ZK-proof check.

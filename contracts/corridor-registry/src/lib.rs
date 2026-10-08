@@ -24,6 +24,7 @@ enum DataKey {
 pub enum RegistryError {
     NotInitialized = 1,
     NoPendingAdmin = 2,
+    InvalidCorridorId = 3,
 }
 
 #[contract]
@@ -105,6 +106,9 @@ impl CorridorRegistry {
     /// A registry flag does not prove an issuer, asset, or payout partner exists.
     pub fn set_enabled(env: Env, corridor: String, enabled: bool) -> Result<(), RegistryError> {
         authorize_admin(&env)?;
+        if corridor.is_empty() || corridor.len() > 128 {
+            return Err(RegistryError::InvalidCorridorId);
+        }
         let key = DataKey::Corridor(corridor);
         env.storage().persistent().set(&key, &enabled);
         env.storage()
@@ -115,6 +119,7 @@ impl CorridorRegistry {
     }
 
     pub fn is_enabled(env: Env, corridor: String) -> bool {
+        if corridor.is_empty() || corridor.len() > 128 { return false; }
         if Self::is_paused(env.clone()) {
             return false;
         }
