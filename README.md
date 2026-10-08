@@ -37,3 +37,9 @@ This repo was renamed from the original monorepo. Historical \`apps/\`, \`servic
 
 ## Safety
 No real funds; never commit credentials or witnesses. Review [SECURITY.md](SECURITY.md). License selection and contributor governance will be settled through open development.
+
+## PolicyRegistry — separate governance prototype
+
+The workspace now includes a second Soroban contract: [PolicyRegistry](contracts/policy-registry/README.md). It offers admin-authenticated policy commitment updates, strictly increasing revisions, and a fail-closed global pause. Both contracts are intentionally **public configuration registries**, not custody or ZK settlement solutions.
+
+Refer to [the policy security model](docs/POLICY-REGISTRY.md) and [the comprehensive roadmap](ROADMAP.md). No contract ID or live asset integration is claimed until independently verifiable deployment evidence exists.
