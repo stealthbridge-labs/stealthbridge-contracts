@@ -1,0 +1,21 @@
+[workspace]
+members = ["contracts/corridor-registry"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+publish = false
+
+[workspace.dependencies]
+# Major version must match the target Stellar protocol. Reconfirm before deploy.
+soroban-sdk = "27"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true

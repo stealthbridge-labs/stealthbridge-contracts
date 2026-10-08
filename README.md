@@ -1,66 +1,35 @@
-# StealthBridge
+# StealthBridge Protocol & Smart Contracts
 
 **Confidential payments. Without borders.**
 
-StealthBridge is an experimental, **testnet-only** cross-border payment platform on Stellar. It comprises:
+[Frontend](https://github.com/stealthbridge-labs/stealthbridge-frontend) · [Backend](https://github.com/stealthbridge-labs/stealthbridge-backend) · [SDK](https://github.com/stealthbridge-labs/stealthbridge-sdk)
 
-- **StealthBridge Business** — confidential settlements between known payment providers and businesses (amount and balance confidentiality is the intended initial model).
-- **StealthBridge Send** — private consumer remittance journeys (amount and payer–recipient relationship privacy are intended, subject to feasibility validation).
-- **StealthBridge Protocol** — shared corridor configuration, orchestration, policy enforcement, privacy integrations, and developer interfaces.
+> **Status:** research-stage Stellar **testnet-only** protocol. One basic Soroban **corridor enablement registry** is present as source code; no contract deployments, proof-verification contracts, or fund-moving settlement primitives are verified.
 
-## Status
+## What is here?
+- \`contracts/corridor-registry\`: minimal authorized corridor enablement example.
+- \`docs/PROTOCOL-ARCHITECTURE.md\`: confidentiality vs anonymity, issuer-controlled stablecoins, planned boundaries.
+- \`docs/TESTPLAN.md\`: formal verification milestones, no credentials required.
+- \`deployments/testnet/manifest.json\`: truthfully empty deployment manifest.
+- \`docs/PRIVACY-MODEL.md\`: initial threat model.
+- \`docs/REFERENCES.md\`: official developer resources.
 
-**Sprint 0 / architecture proposal — no contracts deployed or privacy guarantees established.** Do not transfer real funds or use this as production financial infrastructure.
+## Build & test
+Prerequisites: Rust 1.84+, \`wasm32v1-none\` target, Stellar CLI version matching testnet protocol.
+\`\`\`sh
+cargo test --workspace
+stellar contract build
+\`\`\`
+Verify actual versions before relying on the current \`soroban-sdk = "27"\` workspace baseline.
 
-## Principles
+## Architecture
+StealthBridge Business targets **confidential amounts with known parties**; StealthBridge Send targets **shielded relationships**. These require separate privacy primitives with different trust and metadata leakage characteristics. The initial registry is intentionally independent of both until testnet composability is proven.
 
-1. Privacy properties must be demonstrated, not assumed.
-2. Reuse reviewed Stellar privacy primitives rather than inventing cryptography.
-3. Distinguish blockchain finality from fiat payout completion.
-4. Never put plaintext confidential payment amounts or ZK witnesses in application logs.
-5. Use only testnet assets and mocked fiat rails during initial engineering.
-6. Compliance requirements must be designed with qualified partners before real-world rollout.
+## Prior-art and diligence
+Tukar provides a compelling testnet reference for private remittances, proofs and compliance. StealthBridge's proposed differentiators are multi-provider tenancy, modular settlement adapters, B2B confidentiality, stablecoin issuer controls, and public SDK surfaces. These are planned capabilities, not shipped claims.
 
-## Layout
+## Legacy scaffolding
+This repo was renamed from the original monorepo. Historical \`apps/\`, \`services/\`, and \`packages/\` placeholders remain until reviewed; **implementation now belongs to the dedicated repositories above**. We preserve content rather than destroying it.
 
-- `apps/business` — planned B2B dashboard
-- `apps/send` — planned consumer sender/receiver interface
-- `services/api` — planned service API
-- `services/settlement-engine` — planned settlement state machine and reconciliation
-- `services/indexer` — planned Stellar ledger event ingestion
-- `contracts` — potential Soroban modules; interfaces intentionally **not yet frozen**
-- `packages/privacy-adapters` — separate Confidential Tokens and SPP adapters
-- `integrations` — privacy, FX, and fiat connector implementations
-- `docs` — foundational specs and decisions
-- `tests` — future integration and end-to-end tests
-
-## Begin here
-
-1. Read [Product Requirements](docs/PRODUCT.md).
-2. Read [System Architecture](docs/ARCHITECTURE.md) and [Privacy Model](docs/PRIVACY-MODEL.md).
-3. Review [ADRs](docs/adr/) and [Sprint 0 Backlog](docs/SPRINT-0.md).
-4. Confirm current Stellar library API compatibility and testnet deployability before writing payment contracts.
-
-## Security
-
-No production use. Do not commit seeds, mnemonic phrases, wallet private keys, API tokens, plaintext KYC data, payment witnesses, or other secrets. See [SECURITY.md](SECURITY.md).
-
-## License
-
-License decision pending. No open-source license is granted merely by publishing the repository.
-
-## Visual identity
-
-![StealthBridge logo](assets/stealthbridge-logo.svg)
-
-The vector logo source lives in [`assets/stealthbridge-logo.svg`](assets/stealthbridge-logo.svg).
-
-## Target three-repository architecture
-
-We are moving toward **three independently versioned repositories**:
-
-- `stealthbridge-frontend` — Business and Send user interfaces.
-- `stealthbridge-backend` — settlement API, workflow engine, indexer and mock fiat/FX services.
-- `stealthbridge-contracts` — Soroban Rust contracts, deployment manifests and binding artifacts.
-
-This repository preserves the initial Sprint 0 scaffold and documents until the split is complete; do not treat existing placeholder folders as implemented applications. See [ADR-0003](docs/adr/0003-three-repositories.md).
+## Safety
+No real funds; never commit credentials or witnesses. Review [SECURITY.md](SECURITY.md). License selection and contributor governance remain open ahead of eventual Drips onboarding.
