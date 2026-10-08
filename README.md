@@ -19,12 +19,36 @@
 - \`docs/REFERENCES.md\`: official developer resources.
 
 ## Build & test
-Prerequisites: Rust 1.84+, \`wasm32v1-none\` target, Stellar CLI version matching testnet protocol.
-\`\`\`sh
-cargo test --workspace
-stellar contract build
-\`\`\`
-Verify actual versions before relying on the current \`soroban-sdk = "27"\` workspace baseline.
+The repository pins Rust **1.91.0**, Soroban SDK **27.0.6**, Stellar CLI
+**27.1.0**, and the `wasm32v1-none` target (protocol **27** baseline).
+Install the CLI from its [official release](https://github.com/stellar/stellar-cli/releases/tag/v27.1.0).
+Rustup reads `rust-toolchain.toml` automatically.
+
+```sh
+cargo fmt --all -- --check
+cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo build --workspace --locked --target wasm32v1-none --release
+python3 -m unittest discover -s scripts -p 'test_*.py'
+python3 scripts/artifacts.py
+python3 scripts/validate_manifest.py
+python3 scripts/benchmark.py
+```
+
+These commands run locally without signer credentials. CI publishes the WASM,
+ABI snapshot, source/tool versions, checksums, and a quantitative resource table.
+The artifact script compares two isolated release builds byte-for-byte.
+[Verification and benchmark details](docs/REGISTRY-VERIFICATION.md) describe
+what is measured and the local test limitations. The checked-in Testnet manifest
+remains `not-deployed`: a local build is not evidence of deployment, settlement,
+or verified network compatibility. Confirm the target network's protocol before
+any separately authorized deployment.
+
+Local verification on macOS ARM64 with the pinned toolchain: seven workspace
+unit tests passed, the separate benchmark passed all 22 scenarios, and Clippy
+passed with warnings denied. The two isolated corridor WASM builds matched
+(6,549 bytes). The authorization/restoration tests use the local SDK host;
+real signatures, network restoration fees and deployment remain unverified.
 
 ## Architecture
 StealthBridge Business targets **confidential amounts with known parties**; StealthBridge Send targets **shielded relationships**. These require separate privacy primitives with different trust and metadata leakage characteristics. The initial registry is intentionally independent of both until testnet composability is proven.

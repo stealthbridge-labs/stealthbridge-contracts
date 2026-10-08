@@ -15,3 +15,8 @@ Placeholder for Sprint 0 architecture and feasibility research. No production im
 **Important:** registry enablement does not guarantee supported fiat corridors, liquidity, policy eligibility, stablecoin issuer acceptance or a working private payment integration. The current contract holds no financial amounts, payment identities or sensitive notes. Deployed contract IDs remain absent until an approved and verified Testnet deployment.
 
 Tests cover authorized configuration, two-step admin rotation, emergency pause behavior and unauthenticated mutations. See the [protocol roadmap](../../ROADMAP.md) for upgrade governance, contract proof checks and audit gates.
+
+Scoped authorization, TTL boundary/restoration-model tests, reproducible artifacts,
+and resource benchmarks are documented in [registry verification](../../docs/REGISTRY-VERIFICATION.md).
+No application events are emitted. Arguments and storage are public; never use
+participant or private-payment identifiers as corridor IDs.

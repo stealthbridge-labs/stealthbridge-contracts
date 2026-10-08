@@ -4,14 +4,30 @@ permissions:
   contents: read
 jobs:
   contracts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.91.0
         with:
           targets: wasm32v1-none
           components: rustfmt, clippy
-      - run: cargo fmt --all
-      - run: cargo test --workspace
-      - run: cargo clippy --workspace --all-targets -- -D warnings
-      - run: cargo build --target wasm32v1-none --release
+      - name: Install pinned Stellar CLI (no accounts or network transactions)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v27.1.0 --repo stellar/stellar-cli --pattern stellar-cli-27.1.0-x86_64-unknown-linux-gnu.tar.gz --dir "$RUNNER_TEMP/stellar"
+          tar -xzf "$RUNNER_TEMP/stellar/stellar-cli-27.1.0-x86_64-unknown-linux-gnu.tar.gz" -C "$RUNNER_TEMP/stellar"
+          echo "$RUNNER_TEMP/stellar" >> "$GITHUB_PATH"
+      - run: cargo fmt --all -- --check
+      - run: cargo test --workspace --locked
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo build --workspace --locked --target wasm32v1-none --release
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - run: python3 scripts/artifacts.py
+      - run: python3 scripts/validate_manifest.py
+      - run: python3 scripts/benchmark.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corridor-registry-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
