@@ -78,6 +78,40 @@ impl Fixture {
 }
 
 #[test]
+fn corridor_nomination_cancellation_requires_current_admin() {
+    let f = Fixture::new();
+    let client = f.client();
+    let successor = Address::generate(&f.env);
+    f.auth(&f.admin, "propose_admin", (successor.clone(),).into_val(&f.env));
+    client.propose_admin(&successor);
+    assert_eq!(client.pending_admin(), Some(successor));
+    f.env.mock_auths(&[]);
+    assert!(client.try_cancel_admin_proposal().is_err());
+    assert_eq!(client.pending_admin(), Some(successor));
+    f.auth(&f.admin, "cancel_admin_proposal", ().into_val(&f.env));
+    client.cancel_admin_proposal();
+    assert_eq!(client.pending_admin(), None);
+    assert_eq!(
+        client.try_accept_admin(),
+        Err(Ok(RegistryError::NoPendingAdmin))
+    );
+    assert_eq!(client.get_admin(), f.admin);
+}
+
+#[test]
+fn missing_pause_state_fails_closed_instead_of_enabling_corridor() {
+    let f = Fixture::new();
+    let id = String::from_str(&f.env, "fixture_missing_pause_state");
+    f.write(&id, true);
+    assert!(f.client().is_enabled(&id));
+    f.env.as_contract(&f.contract, || {
+        f.env.storage().instance().remove(&DataKey::Paused);
+    });
+    assert!(f.client().is_paused());
+    assert!(!f.client().is_enabled(&id));
+}
+
+#[test]
 fn scoped_authorization_pause_and_handover() {
     let f = Fixture::new();
     let client = f.client();

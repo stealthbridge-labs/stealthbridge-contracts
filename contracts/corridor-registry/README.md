@@ -22,3 +22,7 @@ No application events are emitted. Arguments and storage are public; never use
 participant or private-payment identifiers as corridor IDs.
 
 Opaque corridor IDs are constrained to 1–128 bytes. Invalid identifiers cannot be enabled; an invalid read is treated as disabled, never enabled.
+
+## Emergency governance improvements
+
+The corridor registry now permits the currently authorized administrator to cancel a pending successor nomination before acceptance with `cancel_admin_proposal()`. Cancellation never gives the nominee active privileges and is covered by scoped authorization tests. If the instance pause flag is missing or unavailable, `is_paused()` now defaults to **true**, so corridor status fails closed rather than implying eligibility. This is a safety invariant, not proof of real financial corridor availability.

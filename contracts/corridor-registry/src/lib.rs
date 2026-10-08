@@ -75,6 +75,15 @@ impl CorridorRegistry {
         Ok(())
     }
 
+    /// Revoke an unaccepted nomination without changing the active admin.
+    /// The current admin must authorize cancellation.
+    pub fn cancel_admin_proposal(env: Env) -> Result<(), RegistryError> {
+        authorize_admin(&env)?;
+        env.storage().instance().remove(&DataKey::PendingAdmin);
+        renew_instance(&env);
+        Ok(())
+    }
+
     /// Step 2: future admin must explicitly authorize acceptance.
     pub fn accept_admin(env: Env) -> Result<(), RegistryError> {
         let proposed: Address = env
@@ -100,7 +109,7 @@ impl CorridorRegistry {
         env.storage()
             .instance()
             .get(&DataKey::Paused)
-            .unwrap_or(false)
+            .unwrap_or(true)
     }
 
     /// A registry flag does not prove an issuer, asset, or payout partner exists.

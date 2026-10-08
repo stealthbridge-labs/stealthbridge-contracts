@@ -45,3 +45,7 @@ Zero-knowledge protocol feasibility, issuer-controlled token policy, real author
 ## Recent governance hardening
 
 The PolicyRegistry now supports a **two-phase administrator transfer**, with `propose_admin(successor)`, `pending_admin()`, `cancel_admin_proposal()` and `accept_admin()`. The current administrator authorizes nomination/cancellation; the nominated account must authorize acceptance. Pending nominations confer no administration until accepted. Both registry contracts reject empty or overlong (more than 128-byte) opaque rule/corridor identifiers on writes and fail closed on invalid read identifiers. The policy's public commitment is **not** a verified user eligibility or ZK-proof check.
+
+## Emergency governance improvements
+
+The corridor registry now permits the currently authorized administrator to cancel a pending successor nomination before acceptance with `cancel_admin_proposal()`. Cancellation never gives the nominee active privileges and is covered by scoped authorization tests. If the instance pause flag is missing or unavailable, `is_paused()` now defaults to **true**, so corridor status fails closed rather than implying eligibility. This is a safety invariant, not proof of real financial corridor availability.
