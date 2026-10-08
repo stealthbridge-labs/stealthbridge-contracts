@@ -2,6 +2,8 @@
 
 # StealthBridge Protocol & Smart Contracts
 
+**Engineering roadmap:** [View the repository-specific plan](ROADMAP.md).
+
 **Confidential payments. Without borders.**
 
 [Frontend](https://github.com/stealthbridge-labs/stealthbridge-frontend) · [Backend](https://github.com/stealthbridge-labs/stealthbridge-backend) · [SDK](https://github.com/stealthbridge-labs/stealthbridge-sdk)
