@@ -99,4 +99,4 @@ G8. Maintain structured contributor issues and public review; publish verifiable
 Tukar already has real testnet shielded corridors, documented compliance proofs, FX gates and other integrations. We do not claim any of those as our differentiator. Our thesis is **a stronger reusable multi-provider interface**, stable issuer-controlled B2B asset paths and shared SDKs alongside a consumer product. Prove these in code and partner integrations before claiming to be an advancement.
 
 ## 12. Open architectural decisions
-D1 managed custody versus exclusively self-custodial UX; D2 issuer token vs pool wrapper; D3 audit key access model; D4 quote signer and oracle acceptance; D5 refund authority; D6 network-specific proof version compatibility; D7 licensing + Drips distribution; D8 deployment and data residency.
+D1 managed custody versus exclusively self-custodial UX; D2 issuer token vs pool wrapper; D3 audit key access model; D4 quote signer and oracle acceptance; D5 refund authority; D6 network-specific proof version compatibility; D7 licensing and contributor governance; D8 deployment and data residency.
