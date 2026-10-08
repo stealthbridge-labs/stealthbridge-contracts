@@ -48,3 +48,19 @@ No production use. Do not commit seeds, mnemonic phrases, wallet private keys, A
 ## License
 
 License decision pending. No open-source license is granted merely by publishing the repository.
+
+## Visual identity
+
+![StealthBridge logo](assets/stealthbridge-logo.svg)
+
+The vector logo source lives in [`assets/stealthbridge-logo.svg`](assets/stealthbridge-logo.svg).
+
+## Target three-repository architecture
+
+We are moving toward **three independently versioned repositories**:
+
+- `stealthbridge-frontend` — Business and Send user interfaces.
+- `stealthbridge-backend` — settlement API, workflow engine, indexer and mock fiat/FX services.
+- `stealthbridge-contracts` — Soroban Rust contracts, deployment manifests and binding artifacts.
+
+This repository preserves the initial Sprint 0 scaffold and documents until the split is complete; do not treat existing placeholder folders as implemented applications. See [ADR-0003](docs/adr/0003-three-repositories.md).
