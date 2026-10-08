@@ -1,3 +1,5 @@
+<div align="center"><img src="assets/stealthbridge-logo.svg" width="540" alt="StealthBridge — Confidential payments. Without borders." /></div>
+
 # StealthBridge Protocol & Smart Contracts
 
 **Confidential payments. Without borders.**
@@ -32,4 +34,4 @@ Tukar provides a compelling testnet reference for private remittances, proofs an
 This repo was renamed from the original monorepo. Historical \`apps/\`, \`services/\`, and \`packages/\` placeholders remain until reviewed; **implementation now belongs to the dedicated repositories above**. We preserve content rather than destroying it.
 
 ## Safety
-No real funds; never commit credentials or witnesses. Review [SECURITY.md](SECURITY.md). License selection and contributor governance remain open ahead of eventual Drips onboarding.
+No real funds; never commit credentials or witnesses. Review [SECURITY.md](SECURITY.md). License selection and contributor governance will be settled through open development.

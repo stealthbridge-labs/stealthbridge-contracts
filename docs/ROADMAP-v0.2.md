@@ -15,7 +15,7 @@ Browser proof, shielded note backup/recovery, funding and unshielding, simulated
 **Milestone D — stablecoin issuer and multi-provider platform**
 Issuer-managed confidential asset evaluation, policy and auditor scopes, multi-tenant B2B APIs, reconciliation and risk governance, scale benchmarks.
 
-**Milestone E — open source + Drips**
-License decision, security contacts, branch protections, CONTRIBUTING, tested CI, small contributor issues, public technical design review, project funding registration only with explicit organizational approval.
+**Milestone E — Open development**
+License decision, security contacts, branch protections, CONTRIBUTING, tested CI, contributor issues and public technical design review.
 
 All target milestones are contingent on testnet compatibility and security outcomes. No deadlines, partner agreements or real transfer volume are promised.

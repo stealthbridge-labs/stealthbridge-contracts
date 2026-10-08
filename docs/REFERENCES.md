@@ -20,3 +20,7 @@ Important skill notes:
 - OpenZeppelin setup skill is AGPL-3.0-only. We reference it, but **do not copy/redistribute its code** without a licensing decision.
 - DeFindex is a vault SDK, not needed for core corridor settlement; no integration scheduled.
 - OpenZeppelin Relayer requires future service/credential provision; not set up.
+
+## Visual identity
+
+Use the approved ribbon-shaped StealthBridge SVG in `assets/stealthbridge-logo.svg`. The separate `assets/stealthbridge-symbol.svg` is the matching compact icon. The canonical source is the organization community repository.

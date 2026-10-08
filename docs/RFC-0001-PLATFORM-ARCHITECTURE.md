@@ -93,7 +93,7 @@ G4. Validate interoperability boundaries with our registry/policy contracts (or 
 G5. Simulate settlement concurrency, callback races, chain rejection and recipient recovery.
 G6. End-to-end UI with honest loading/error states and accurate contract status.
 G7. Independent review of compliance, legal and security posture before any real-value pilot.
-G8. Only after verifiable artifacts: begin structured contributor issues, grant/funding preparation, Drips profile and licensing.
+G8. Maintain structured contributor issues and public review; publish verifiable artifacts, clear licensing and security guidance before wider integration.
 
 ## 11. Benchmark against Tukar
 Tukar already has real testnet shielded corridors, documented compliance proofs, FX gates and other integrations. We do not claim any of those as our differentiator. Our thesis is **a stronger reusable multi-provider interface**, stable issuer-controlled B2B asset paths and shared SDKs alongside a consumer product. Prove these in code and partner integrations before claiming to be an advancement.
