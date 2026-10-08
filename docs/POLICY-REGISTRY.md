@@ -23,3 +23,7 @@ The contract does not validate the contents of a commitment or satisfy complianc
 ## Recent governance hardening
 
 The PolicyRegistry now supports a **two-phase administrator transfer**, with `propose_admin(successor)`, `pending_admin()`, `cancel_admin_proposal()` and `accept_admin()`. The current administrator authorizes nomination/cancellation; the nominated account must authorize acceptance. Pending nominations confer no administration until accepted. Both registry contracts reject empty or overlong (more than 128-byte) opaque rule/corridor identifiers on writes and fail closed on invalid read identifiers. The policy's public commitment is **not** a verified user eligibility or ZK-proof check.
+
+## Authorization-bound transition test
+
+The policy-registry unit suite now uses Soroban SDK `MockAuth` with explicit contract/function/argument scopes to confirm a wrong signer cannot propose control, the current administrator cannot accept a successor's nomination, and the former administrator loses mutating access after a valid successor authorization. This is a unit-test impersonation model, **not** proof of independently signed mainnet transactions or a deployed/verified policy registry.

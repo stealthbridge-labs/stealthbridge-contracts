@@ -150,7 +150,8 @@ impl PolicyRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use soroban_sdk::testutils::Address as _;
+    use soroban_sdk::testutils::{Address as _, MockAuth, MockAuthInvoke};
+    use soroban_sdk::{IntoVal, Val, Vec};
     #[test]
     fn revisions_are_monotonic_and_pause_fails_closed() {
         let env = Env::default();
@@ -232,6 +233,84 @@ mod tests {
         assert!(client.try_set_paused(&true).is_err());
         assert!(client.try_cancel_admin_proposal().is_err());
     }
+    #[test]
+    fn scoped_auth_proves_nominee_must_sign_handover() {
+        let env = Env::default();
+        let original = Address::generate(&env);
+        let successor = Address::generate(&env);
+        let outsider = Address::generate(&env);
+        let contract = env.register(PolicyRegistry, (original.clone(),));
+        let client = PolicyRegistryClient::new(&env, &contract);
+
+        // Unauthenticated or wrong-party nomination never changes state.
+        env.mock_auths(&[]);
+        assert!(client.try_propose_admin(&successor).is_err());
+        env.mock_auths(&[MockAuth {
+            address: &outsider,
+            invoke: &MockAuthInvoke {
+                contract: &contract,
+                fn_name: "propose_admin",
+                args: (successor.clone(),).into_val(&env),
+                sub_invokes: &[],
+            },
+        }]);
+        assert!(client.try_propose_admin(&successor).is_err());
+        assert_eq!(client.pending_admin(), None);
+        env.mock_auths(&[MockAuth {
+            address: &original,
+            invoke: &MockAuthInvoke {
+                contract: &contract,
+                fn_name: "propose_admin",
+                args: (successor.clone(),).into_val(&env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.propose_admin(&successor);
+        assert_eq!(client.pending_admin(), Some(successor.clone()));
+
+        // The current administrator may nominate but CANNOT accept for the
+        // successor. A stranger may not accept either.
+        for signer in [&original, &outsider] {
+            env.mock_auths(&[MockAuth {
+                address: signer,
+                invoke: &MockAuthInvoke {
+                    contract: &contract,
+                    fn_name: "accept_admin",
+                    args: Vec::<Val>::new(&env),
+                    sub_invokes: &[],
+                },
+            }]);
+            assert!(client.try_accept_admin().is_err());
+            assert_eq!(client.admin(), original);
+            assert_eq!(client.pending_admin(), Some(successor.clone()));
+        }
+        env.mock_auths(&[MockAuth {
+            address: &successor,
+            invoke: &MockAuthInvoke {
+                contract: &contract,
+                fn_name: "accept_admin",
+                args: Vec::<Val>::new(&env),
+                sub_invokes: &[],
+            },
+        }]);
+        client.accept_admin();
+        assert_eq!(client.admin(), successor);
+        assert_eq!(client.pending_admin(), None);
+
+        // A stale old-admin signature cannot regain control.
+        env.mock_auths(&[MockAuth {
+            address: &original,
+            invoke: &MockAuthInvoke {
+                contract: &contract,
+                fn_name: "set_paused",
+                args: (true,).into_val(&env),
+                sub_invokes: &[],
+            },
+        }]);
+        assert!(client.try_set_paused(&true).is_err());
+        assert!(!client.is_paused());
+    }
+
     #[test]
     fn invalid_rule_identifiers_fail_closed() {
         let env = Env::default();
