@@ -1,4 +1,4 @@
-<div align="center"><img src="assets/stealthbridge-logo.svg" width="540" alt="StealthBridge — Confidential payments. Without borders." /></div>
+<div align="center"><img src="assets/stealthbridge-logo.svg" width="760" alt="StealthBridge — Confidential payments. Without borders." /></div>
 
 # StealthBridge Protocol & Smart Contracts
 
