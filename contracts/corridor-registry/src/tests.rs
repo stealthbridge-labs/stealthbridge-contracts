@@ -88,10 +88,10 @@ fn corridor_nomination_cancellation_requires_current_admin() {
         (successor.clone(),).into_val(&f.env),
     );
     client.propose_admin(&successor);
-    assert_eq!(client.pending_admin(), Some(successor));
+    assert_eq!(client.pending_admin(), Some(successor.clone()));
     f.env.mock_auths(&[]);
     assert!(client.try_cancel_admin_proposal().is_err());
-    assert_eq!(client.pending_admin(), Some(successor));
+    assert_eq!(client.pending_admin(), Some(successor.clone()));
     f.auth(&f.admin, "cancel_admin_proposal", ().into_val(&f.env));
     client.cancel_admin_proposal();
     assert_eq!(client.pending_admin(), None);
