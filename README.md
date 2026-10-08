@@ -43,3 +43,7 @@ No real funds; never commit credentials or witnesses. Review [SECURITY.md](SECUR
 The workspace now includes a second Soroban contract: [PolicyRegistry](contracts/policy-registry/README.md). It offers admin-authenticated policy commitment updates, strictly increasing revisions, and a fail-closed global pause. Both contracts are intentionally **public configuration registries**, not custody or ZK settlement solutions.
 
 Refer to [the policy security model](docs/POLICY-REGISTRY.md) and [the comprehensive roadmap](ROADMAP.md). No contract ID or live asset integration is claimed until independently verifiable deployment evidence exists.
+
+## Detailed implementation guide
+
+[Contract implementation guide](docs/IMPLEMENTATION-GUIDE.md) documents both Soroban crates, authorization rules, verification procedures, TTL handling and deployment boundaries.
