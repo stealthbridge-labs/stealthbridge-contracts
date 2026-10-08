@@ -119,7 +119,9 @@ impl CorridorRegistry {
     }
 
     pub fn is_enabled(env: Env, corridor: String) -> bool {
-        if corridor.is_empty() || corridor.len() > 128 { return false; }
+        if corridor.is_empty() || corridor.len() > 128 {
+            return false;
+        }
         if Self::is_paused(env.clone()) {
             return false;
         }
