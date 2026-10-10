@@ -1,0 +1,66 @@
+#![no_std]
+//! Immutable, read-only cross-registry governance gate. It is not a payment,
+//! privacy proof, compliance authorization, issuer or liquidity oracle.
+use soroban_sdk::{contract,contractimpl,contracttype,Address,Env,IntoVal,String,Symbol,Val,Vec};
+
+#[contracttype]
+#[derive(Clone)]
+enum Key {
+    Admin,
+    CorridorRegistry,
+    PolicyRegistry,
+}
+
+#[contract]
+pub struct GovernanceGate;
+
+fn query_enabled(env:&Env,registry:&Address,method:&str,id:String)->bool {
+    let args:Vec<Val>=(id,).into_val(env);
+    let function=Symbol::new(env,method);
+    // Missing contracts, bad ABI, downstream panics, errors and malformed
+    // return types must never be interpreted as governance approval.
+    matches!(
+        env.try_invoke_contract::<bool,soroban_sdk::Error>(registry,&function,args),
+        Ok(Ok(true))
+    )
+}
+
+#[contractimpl]
+impl GovernanceGate {
+    /// Both dependencies are fixed at deployment. Constructor requires the
+    /// operator's explicit Soroban authorization for this exact invocation.
+    pub fn __constructor(env:Env,admin:Address,corridor_registry:Address,policy_registry:Address) {
+        admin.require_auth();
+        env.storage().instance().set(&Key::Admin,&admin);
+        env.storage().instance().set(&Key::CorridorRegistry,&corridor_registry);
+        env.storage().instance().set(&Key::PolicyRegistry,&policy_registry);
+    }
+
+    /// Public dependency discovery only; these are governance addresses,
+    /// not settlement wallets, token issuers or proof verifier contracts.
+    pub fn get_admin(env:Env)->Option<Address>{
+        env.storage().instance().get(&Key::Admin)
+    }
+    pub fn corridor_registry(env:Env)->Option<Address>{
+        env.storage().instance().get(&Key::CorridorRegistry)
+    }
+    pub fn policy_registry(env:Env)->Option<Address>{
+        env.storage().instance().get(&Key::PolicyRegistry)
+    }
+
+    /// True means only that two *public registry flags* currently agree.
+    /// Neither registry is an independently verified private payment rail.
+    /// Fail closed if a dependency is absent, paused, expired or incompatible.
+    pub fn public_flags_allow(env:Env,corridor:String,policy:String)->bool{
+        if corridor.is_empty()||corridor.len()>128||policy.is_empty()||policy.len()>128{
+            return false;
+        }
+        let Some(corridor_registry)=env.storage().instance().get::<_,Address>(&Key::CorridorRegistry) else {return false};
+        let Some(policy_registry)=env.storage().instance().get::<_,Address>(&Key::PolicyRegistry) else {return false};
+        query_enabled(&env,&corridor_registry,"is_enabled",corridor)
+            &&query_enabled(&env,&policy_registry,"is_effective",policy)
+    }
+}
+
+#[cfg(test)]
+mod tests;
