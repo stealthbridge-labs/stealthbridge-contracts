@@ -25,6 +25,7 @@ pub enum RegistryError {
     NotInitialized = 1,
     NoPendingAdmin = 2,
     InvalidCorridorId = 3,
+    Paused = 4,
 }
 
 #[contract]
@@ -117,6 +118,11 @@ impl CorridorRegistry {
         authorize_admin(&env)?;
         if corridor.is_empty() || corridor.len() > 128 {
             return Err(RegistryError::InvalidCorridorId);
+        }
+        // Do not stage newly enabled flags during an emergency pause.
+        // Disabling an entry remains allowed while paused.
+        if enabled && Self::is_paused(env.clone()) {
+            return Err(RegistryError::Paused);
         }
         let key = DataKey::Corridor(corridor);
         env.storage().persistent().set(&key, &enabled);
