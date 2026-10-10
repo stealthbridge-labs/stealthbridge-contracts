@@ -61,5 +61,51 @@ class ManifestTests(unittest.TestCase):
                 validate(self.deployed, evidence, wasm, abi)
 
 
+
+# Keep source ABI conformance in the existing offline Python test suite.
+from verify_public_interface import signatures as interface_signatures, validate as validate_interface
+
+_INTERFACE_SOURCES = {
+    "corridor-registry": "pub fn __constructor(env: Env) {}\npub fn get_admin(env: Env) -> Result<Address, RegistryError> {}",
+    "policy-registry": "pub fn __constructor(env: Env) {}\npub fn admin(env: Env) -> Result<Address, PolicyError> {}",
+}
+_INTERFACE_METADATA = {
+    "schemaVersion": 1, "network": "testnet", "status": "source-interface-only",
+    "contracts": {
+        "corridor-registry": {"reads": {"get_admin": {"args": [], "returns": "Address"}}, "writes": []},
+        "policy-registry": {"reads": {"admin": {"args": [], "returns": "Address"}}, "writes": []},
+    },
+}
+
+
+class PublicInterfaceDriftTests(unittest.TestCase):
+    def test_declared_source_inventory(self):
+        self.assertTrue(validate_interface(_INTERFACE_METADATA, _INTERFACE_SOURCES))
+
+    def test_new_public_method_rejected(self):
+        altered = dict(_INTERFACE_SOURCES)
+        altered["corridor-registry"] += "\npub fn added(env: Env) -> bool {}"
+        with self.assertRaisesRegex(ValueError, "public method drift"):
+            validate_interface(_INTERFACE_METADATA, altered)
+
+    def test_read_return_type_drift_rejected(self):
+        altered = dict(_INTERFACE_SOURCES)
+        altered["policy-registry"] = altered["policy-registry"].replace("Result<Address, PolicyError>", "bool")
+        with self.assertRaisesRegex(ValueError, "read signature drift"):
+            validate_interface(_INTERFACE_METADATA, altered)
+
+    def test_read_argument_type_drift_rejected(self):
+        altered = dict(_INTERFACE_SOURCES)
+        altered["corridor-registry"] = altered["corridor-registry"].replace(
+            "get_admin(env: Env)", "get_admin(env: Env, id: String)")
+        with self.assertRaisesRegex(ValueError, "read signature drift"):
+            validate_interface(_INTERFACE_METADATA, altered)
+
+    def test_duplicate_public_method_rejected(self):
+        with self.assertRaisesRegex(ValueError, "duplicate public method"):
+            interface_signatures(_INTERFACE_SOURCES["corridor-registry"] +
+                                 "\npub fn get_admin(env: Env) -> Address {}")
+
+
 if __name__ == "__main__":
     unittest.main()
