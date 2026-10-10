@@ -4,11 +4,34 @@
 
 **Engineering roadmap:** [View the repository-specific plan](ROADMAP.md).
 
+## Soroban architecture: three contracts and the route to Testnet
+
+**Full engineering guide:** [Soroban architecture, source-to-WASM provenance, wallet signing boundaries, and delivery milestones](docs/ARCHITECTURE-AND-DELIVERY.md).
+
+```text
+CorridorRegistry ── public is_enabled(corridor) ─┐
+                                                 ├── GovernanceGate
+PolicyRegistry ── public is_effective(policy) ───┘    │
+                                                      └─ public_flags_allow()
+Future independently attested Testnet deployments → backend safe reads
+Future audited private rail and settlement adapter (NOT implemented)
+```
+
+**What exists:** three actual Rust/Soroban crates—[corridor registry](contracts/corridor-registry/README.md), [policy registry](contracts/policy-registry/README.md), and [read-only governance gate](contracts/governance-gate/README.md). They have scoped authorization, emergency-pause logic, local cross-contract tests and reproducible WASM/ABI artifact evidence. A combined public governance flag does not authorize token transfer, validate a privacy proof, or confirm settlement eligibility.
+
+**What does not exist:** the canonical `deployments/testnet/manifest.json` is still **not-deployed**. No contract ID, signed Testnet deployment, actual token/privacy verifier, issuer-backed asset, custody or fiat payout has been independently attested. The existing manifest v1 is not yet a full three-contract deployment-attestation format.
+
+**Near-term release plan:** verify artifacts and isolated Testnet RPC through the [preflight](deployments/testnet/OPERATOR-DEPLOYMENT-RUNBOOK.md); obtain an explicitly approved operator-controlled public G-address; deploy **only with separately approved local wallet signing**; independently verify actual on-chain WASM, source and constructor-bound registry addresses; record transactions and update a reviewed three-contract manifest before backend/SDK/frontend are allowed to consume live contract IDs.
+
+**Privacy roadmap:** evaluate Confidential Tokens for value confidentiality and Stellar Private Payments for relationship privacy as separate systems. Define issuer authority, private proof inputs, nullifier/replay protections, fee/TTL, metadata disclosure, account recovery and regulator access. Implement fund-moving contracts **only** when the chosen primitive, legal model, asset issuer and external settlement arrangements have passed security review.
+
+**Verification commands:** `cargo test --workspace --locked`, `cargo clippy --workspace --all-targets --locked -- -D warnings`, `python3 scripts/artifacts.py`, `python3 scripts/verify_artifacts.py`, and `python3 scripts/preflight_testnet.py`. A local WASM match is not evidence that anything has been deployed.
+
 **Confidential payments. Without borders.**
 
 [Frontend](https://github.com/stealthbridge-labs/stealthbridge-frontend) · [Backend](https://github.com/stealthbridge-labs/stealthbridge-backend) · [SDK](https://github.com/stealthbridge-labs/stealthbridge-sdk)
 
-> **Status:** research-stage Stellar **testnet-only** protocol. One basic Soroban **corridor enablement registry** is present as source code; no contract deployments, proof-verification contracts, or fund-moving settlement primitives are verified.
+> **Status:** research-stage Stellar **testnet-only** protocol. Three **public governance Soroban contracts** (corridor registry, policy registry, read-only governance gate) are compiled and tested as source; no verified on-chain deployments, privacy proofs, or fund-moving settlement primitives exist.
 
 ## What is here?
 - \`contracts/corridor-registry\`: minimal authorized corridor enablement example.
@@ -64,14 +87,14 @@ No real funds; never commit credentials or witnesses. Review [SECURITY.md](SECUR
 
 ## PolicyRegistry — separate governance prototype
 
-The workspace now includes a second Soroban contract: [PolicyRegistry](contracts/policy-registry/README.md). It offers admin-authenticated policy commitment updates, strictly increasing revisions, and a fail-closed global pause. Both contracts are intentionally **public configuration registries**, not custody or ZK settlement solutions.
+The workspace includes the PolicyRegistry alongside the CorridorRegistry and the read-only GovernanceGate: [PolicyRegistry](contracts/policy-registry/README.md). It offers admin-authenticated policy commitment updates, strictly increasing revisions, and a fail-closed global pause. The governance contracts are intentionally **public configuration primitives**, not custody or ZK settlement solutions.
 
 Refer to [the policy security model](docs/POLICY-REGISTRY.md) and [the comprehensive roadmap](ROADMAP.md). No contract ID or live asset integration is claimed until independently verifiable deployment evidence exists.
 
 ## Detailed implementation guide
 
-[Contract implementation guide](docs/IMPLEMENTATION-GUIDE.md) documents both Soroban crates, authorization rules, verification procedures, TTL handling and deployment boundaries.
+[Contract implementation guide](docs/IMPLEMENTATION-GUIDE.md) documents the evolving Soroban workspace, authorization rules, verification procedures, TTL handling and deployment boundaries.
 
 ## Source-level contract interface shared with the SDK
 
-[`integrations/public-soroban-interface.v1.json`](integrations/public-soroban-interface.v1.json) inventories the *actual* CorridorRegistry and PolicyRegistry read methods and separates them from administrator-controlled writes. CI checks the public method names against Rust/Soroban source before an SDK can mirror the interface. This is a source ABI reference, **not** evidence of an on-chain contract instance, a privacy circuit, or a live transfer.
+[`integrations/public-soroban-interface.v1.json`](integrations/public-soroban-interface.v1.json) inventories the *actual* CorridorRegistry, PolicyRegistry and GovernanceGate read methods and separates them from administrator-controlled writes. CI checks the public method names against Rust/Soroban source before an SDK can mirror the interface. This is a source ABI reference, **not** evidence of an on-chain contract instance, a privacy circuit, or a live transfer.
