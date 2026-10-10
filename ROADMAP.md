@@ -27,8 +27,8 @@ Deliver a small set of independently validated Soroban contracts and adapters ca
 
 ## Current baseline
 
-- Soroban Rust workspace and a privileged, Testnet-oriented public corridor registry prototype.
-- Auth and TTL test foundation, WASM build CI, privacy feasibility matrix, threat model and empty testnet deployment manifest.
+- Three Soroban Rust source contracts: authorized corridor registry, versioned policy registry and read-only cross-registry governance gate. Their local tests and reproducible WASM builds are checked in CI.
+- Auth, pause and TTL tests; three-contract local cross-call tests; reproducible WASM/ABI/bytecode integrity checks; privacy feasibility matrix, threat model and intentionally empty Testnet deployment manifest.
 - No confidential token, private payment, issuer contract, custody contract or fund-moving settlement contract has been deployed by StealthBridge.
 
 ## Corridor and governance registry
