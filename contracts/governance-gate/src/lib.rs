@@ -2,7 +2,7 @@
 //! Immutable, read-only cross-registry governance gate. It is not a payment,
 //! privacy proof, compliance authorization, issuer or liquidity oracle.
 use soroban_sdk::{
-    contract, contractimpl, contracttype, Address, Env, IntoVal, String, Symbol, Val, Vec,
+    contract, contractimpl, contracttype, Address, BytesN, Env, IntoVal, String, Symbol, Val, Vec,
 };
 
 #[contracttype]
@@ -59,6 +59,41 @@ impl GovernanceGate {
         env.storage().instance().get(&Key::PolicyRegistry)
     }
 
+    /// An exact public policy version/commitment is required in addition
+    /// to the corridor flag. This rejects stale/substituted policy bindings.
+    /// True is public governance agreement, NEVER settlement authorization.
+    pub fn public_flags_allow_commitment(
+        env: Env,
+        corridor: String,
+        policy: String,
+        expected_revision: u32,
+        expected_commitment: BytesN<32>,
+    ) -> bool {
+        if corridor.is_empty() || corridor.len() > 128
+            || policy.is_empty() || policy.len() > 128
+            || expected_revision == 0
+        {
+            return false;
+        }
+        let Some(corridor_registry) = env.storage().instance().get::<_, Address>(&Key::CorridorRegistry) else {
+            return false;
+        };
+        let Some(policy_registry) = env.storage().instance().get::<_, Address>(&Key::PolicyRegistry) else {
+            return false;
+        };
+        if !query_enabled(&env, &corridor_registry, "is_enabled", corridor) {
+            return false;
+        }
+        let args: Vec<Val> = (policy, expected_revision, expected_commitment).into_val(&env);
+        matches!(
+            env.try_invoke_contract::<bool, soroban_sdk::Error>(
+                &policy_registry,
+                &Symbol::new(&env, "is_effective_commitment"),
+                args,
+            ),
+            Ok(Ok(true))
+        )
+    }
     /// True means only that two *public registry flags* currently agree.
     /// Neither registry is an independently verified private payment rail.
     /// Fail closed if a dependency is absent, paused, expired or incompatible.
