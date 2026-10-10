@@ -18,7 +18,7 @@ audits and selected release tooling to native Rust without losing digest
 verification. CI now compiles and exercises `tools/source-audit.rs` with
 `rustc` alongside all three Soroban crates.
 
-**New actual on-chain Rust methods:** `PolicyRegistry::is_effective_commitment`
+**New actual on-chain Rust methods:** `CorridorRegistry::approve_config` and `is_enabled_with_digest` bind an already-enabled corridor to a revocable public digest and bounded ledger expiry; `PolicyRegistry::is_effective_commitment`
 binds an approved revision and `BytesN<32>` public commitment;
 `GovernanceGate::public_flags_allow_commitment` checks the bound policy
 and corridor through Soroban cross-contract invocations; and
