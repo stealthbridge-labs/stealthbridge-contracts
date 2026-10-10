@@ -4,6 +4,23 @@
 
 **Cross-repository contract:** [Frontend](https://github.com/stealthbridge-labs/stealthbridge-frontend/blob/main/ROADMAP.md) · [Backend](https://github.com/stealthbridge-labs/stealthbridge-backend/blob/main/ROADMAP.md) · [Contracts](https://github.com/stealthbridge-labs/stealthbridge-contracts/blob/main/ROADMAP.md) · [SDK](https://github.com/stealthbridge-labs/stealthbridge-sdk/blob/main/ROADMAP.md)
 
+## October 2026 implementation checkpoint and next delivery slices
+
+See [Soroban architecture and delivery](docs/ARCHITECTURE-AND-DELIVERY.md) for the source workspace map, three-contract cross-call semantics, wallet/signing boundaries and the reviewed Testnet release ceremony.
+
+**Verified code/CI baseline:** Rust `corridor-registry`, `policy-registry`, and `governance-gate` source crates; negative tests for authorization/TTL/emergency pauses, fail-closed cross-contract reads, reproducible isolated WASM and ABI builds, per-artifact digest integrity, operator Testnet preflight and a read-only future on-chain WASM inspector. The current manifest says `not-deployed`.
+
+| Order | Protocol milestone | Exit evidence |
+| --- | --- | --- |
+| C1 | Three-source reproducible governance foundation | Native tests, Clippy, WASM, source/ABI parity and negative scenarios |
+| C2 | Operator-controlled Testnet signing ceremony | Reviewed public G-address, independently approved deploy envelope and verified chain network |
+| C3 | Three-contract Testnet manifest v2 | Real IDs, deployment tx, bytecode hashes, admin/pause/TTL and immutable gate dependency attestations |
+| C4 | Privacy primitives feasibility | Current upstream Confidential Tokens and Private Payments implementations evaluated separately with leak matrix and proof vectors |
+| C5 | Signer/prover/client integration | No private witnesses on backend, explicit user authorization, replay/failed proof tests |
+| C6 | Fund-moving prototype | Independent audit, issuer/policy, reconciliation, recovery, legal and operator approvals; Testnet-only before new decision |
+
+**Deployment is blocked** without a human-approved signer and successful independent verification. `public_flags_allow` is only public governance agreement, not a proof of confidentiality, authorized asset issuance, FX or fiat payout.
+
 ## Protocol charter
 
 Deliver a small set of independently validated Soroban contracts and adapters capable of supporting corridor eligibility, issuer-controlled confidential assets, selective disclosure and secure settlement interactions. Contract complexity is a liability: prefer vetted upstream primitives over copying or inventing cryptographic implementations. Contracts must never publish plaintext protected values or unintentionally link shielded parties through event topics.
