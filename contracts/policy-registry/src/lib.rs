@@ -143,6 +143,25 @@ impl PolicyRegistry {
     }
     /// Returns false for absent, disabled or globally paused entries.
     /// \`true\` only means operator-governed public config is enabled.
+    /// Check the exact public policy revision and commitment.
+    /// This is not a ZK-proof, identity, asset or payout authorization.
+    pub fn is_effective_commitment(
+        env: Env,
+        id: String,
+        expected_revision: u32,
+        expected_commitment: BytesN<32>,
+    ) -> bool {
+        if expected_revision == 0 || Self::is_paused(env.clone()) {
+            return false;
+        }
+        matches!(
+            Self::get_rule(env, id),
+            Some(rule)
+                if rule.enabled
+                    && rule.revision == expected_revision
+                    && rule.public_commitment == expected_commitment
+        )
+    }
     pub fn is_effective(env: Env, id: String) -> bool {
         if Self::is_paused(env.clone()) {
             return false;
