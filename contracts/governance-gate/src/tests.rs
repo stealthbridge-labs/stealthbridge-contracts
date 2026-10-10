@@ -54,6 +54,57 @@ fn observes_both_real_registries_and_fails_closed_during_emergency_pause() {
 }
 
 #[test]
+fn commitment_bound_gate_requires_exact_active_policy_and_corridor() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let corridor_address = env.register(CorridorRegistry, (admin.clone(),));
+    let policy_address = env.register(PolicyRegistry, (admin.clone(),));
+    let gate_address = env.register(
+        GovernanceGate,
+        (admin, corridor_address.clone(), policy_address.clone()),
+    );
+    let gate = GovernanceGateClient::new(&env, &gate_address);
+    let corridors = CorridorRegistryClient::new(&env, &corridor_address);
+    let policies = PolicyRegistryClient::new(&env, &policy_address);
+    let corridor = String::from_str(&env, "operator_vetted_corridor");
+    let policy = String::from_str(&env, "public_policy_v1");
+    let v1 = BytesN::from_array(&env, &[11_u8; 32]);
+    let v2 = BytesN::from_array(&env, &[12_u8; 32]);
+    assert!(!gate.public_flags_allow_commitment(&corridor, &policy, &1, &v1));
+    corridors.set_enabled(&corridor, &true);
+    policies.set_rule(
+        &policy,
+        &PolicyRecord {
+            revision: 1,
+            enabled: true,
+            public_commitment: v1.clone(),
+        },
+    );
+    assert!(gate.public_flags_allow_commitment(&corridor, &policy, &1, &v1));
+    assert!(!gate.public_flags_allow_commitment(&corridor, &policy, &1, &v2));
+    assert!(!gate.public_flags_allow_commitment(&corridor, &policy, &0, &v1));
+    assert!(!gate.public_flags_allow_commitment(&corridor, &policy, &2, &v1));
+    policies.set_rule(
+        &policy,
+        &PolicyRecord {
+            revision: 2,
+            enabled: true,
+            public_commitment: v2.clone(),
+        },
+    );
+    assert!(!gate.public_flags_allow_commitment(&corridor, &policy, &1, &v1));
+    assert!(gate.public_flags_allow_commitment(&corridor, &policy, &2, &v2));
+    corridors.set_paused(&true);
+    assert!(!gate.public_flags_allow_commitment(&corridor, &policy, &2, &v2));
+    corridors.set_paused(&false);
+    policies.set_paused(&true);
+    assert!(!gate.public_flags_allow_commitment(&corridor, &policy, &2, &v2));
+    policies.set_paused(&false);
+    corridors.set_enabled(&corridor, &false);
+    assert!(!gate.public_flags_allow_commitment(&corridor, &policy, &2, &v2));
+}
+#[test]
 fn invalid_arguments_and_unknown_registry_addresses_never_authorize() {
     let env = Env::default();
     env.mock_all_auths();
