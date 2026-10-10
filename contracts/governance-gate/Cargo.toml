@@ -1,0 +1,16 @@
+[package]
+name = "stealthbridge-governance-gate"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+stealthbridge-corridor-registry = { path = "../corridor-registry" }
+stealthbridge-policy-registry = { path = "../policy-registry" }
