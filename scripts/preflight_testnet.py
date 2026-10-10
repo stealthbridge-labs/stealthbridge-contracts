@@ -9,6 +9,7 @@ import argparse
 import base64
 import binascii
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -118,10 +119,18 @@ def main():
     parser.add_argument("--artifacts", type=Path, default=Path("artifacts"))
     parser.add_argument("--manifest", type=Path, default=Path("deployments/testnet/manifest.json"))
     parser.add_argument("--operator", help="Public G-address only. Never supply a secret key.")
-    parser.add_argument("--rpc-url", help="Optional HTTPS Stellar Testnet JSON-RPC endpoint; not printed")
+    parser.add_argument("--rpc-url", help="Optional public HTTPS Stellar Testnet RPC endpoint; not printed")
+    parser.add_argument("--rpc-url-env", help="Environment variable name holding private RPC URL; keeps token out of command arguments")
     args = parser.parse_args()
     try:
-        status = preflight(args.artifacts, args.manifest, args.operator, args.rpc_url)
+        if args.rpc_url and args.rpc_url_env:
+            raise ValueError("Choose only one RPC configuration method")
+        if args.rpc_url_env and not re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", args.rpc_url_env):
+            raise ValueError("Invalid RPC environment-variable name")
+        rpc_url = os.environ.get(args.rpc_url_env) if args.rpc_url_env else args.rpc_url
+        if args.rpc_url_env and not rpc_url:
+            raise ValueError("Requested RPC environment variable is missing")
+        status = preflight(args.artifacts, args.manifest, args.operator, rpc_url)
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
         # Do not echo RPC URLs containing provider API keys or user secrets.
         print("Preflight failed. Verify artifacts, manifest, account syntax, RPC "
