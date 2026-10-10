@@ -2,65 +2,72 @@ extern crate std;
 
 use super::*;
 use soroban_sdk::{testutils::Address as _, BytesN, String};
-use stealthbridge_corridor_registry::{CorridorRegistry,CorridorRegistryClient};
-use stealthbridge_policy_registry::{PolicyRecord,PolicyRegistry,PolicyRegistryClient};
+use stealthbridge_corridor_registry::{CorridorRegistry, CorridorRegistryClient};
+use stealthbridge_policy_registry::{PolicyRecord, PolicyRegistry, PolicyRegistryClient};
 
 #[test]
-fn observes_both_real_registries_and_fails_closed_during_emergency_pause(){
-    let env=Env::default();
+fn observes_both_real_registries_and_fails_closed_during_emergency_pause() {
+    let env = Env::default();
     env.mock_all_auths();
-    let admin=Address::generate(&env);
-    let corridor_address=env.register(CorridorRegistry,(admin.clone(),));
-    let policy_address=env.register(PolicyRegistry,(admin.clone(),));
-    let gate_address=env.register(GovernanceGate,(
-        admin.clone(),corridor_address.clone(),policy_address.clone()
-    ));
-    let gate=GovernanceGateClient::new(&env,&gate_address);
-    let corridors=CorridorRegistryClient::new(&env,&corridor_address);
-    let policies=PolicyRegistryClient::new(&env,&policy_address);
-    let corridor=String::from_str(&env,"testnet_public_corridor");
-    let policy=String::from_str(&env,"testnet_public_policy");
+    let admin = Address::generate(&env);
+    let corridor_address = env.register(CorridorRegistry, (admin.clone(),));
+    let policy_address = env.register(PolicyRegistry, (admin.clone(),));
+    let gate_address = env.register(
+        GovernanceGate,
+        (
+            admin.clone(),
+            corridor_address.clone(),
+            policy_address.clone(),
+        ),
+    );
+    let gate = GovernanceGateClient::new(&env, &gate_address);
+    let corridors = CorridorRegistryClient::new(&env, &corridor_address);
+    let policies = PolicyRegistryClient::new(&env, &policy_address);
+    let corridor = String::from_str(&env, "testnet_public_corridor");
+    let policy = String::from_str(&env, "testnet_public_policy");
 
-    assert_eq!(gate.get_admin(),Some(admin));
-    assert_eq!(gate.corridor_registry(),Some(corridor_address));
-    assert_eq!(gate.policy_registry(),Some(policy_address));
-    assert!(!gate.public_flags_allow(&corridor,&policy));
-    corridors.set_enabled(&corridor,&true);
-    assert!(!gate.public_flags_allow(&corridor,&policy));
-    policies.set_rule(&policy,&PolicyRecord{
-        revision:1,enabled:true,
-        public_commitment:BytesN::from_array(&env,&[7u8;32])
-    });
-    assert!(gate.public_flags_allow(&corridor,&policy));
+    assert_eq!(gate.get_admin(), Some(admin));
+    assert_eq!(gate.corridor_registry(), Some(corridor_address));
+    assert_eq!(gate.policy_registry(), Some(policy_address));
+    assert!(!gate.public_flags_allow(&corridor, &policy));
+    corridors.set_enabled(&corridor, &true);
+    assert!(!gate.public_flags_allow(&corridor, &policy));
+    policies.set_rule(
+        &policy,
+        &PolicyRecord {
+            revision: 1,
+            enabled: true,
+            public_commitment: BytesN::from_array(&env, &[7u8; 32]),
+        },
+    );
+    assert!(gate.public_flags_allow(&corridor, &policy));
     corridors.set_paused(&true);
-    assert!(!gate.public_flags_allow(&corridor,&policy));
+    assert!(!gate.public_flags_allow(&corridor, &policy));
     corridors.set_paused(&false);
-    assert!(gate.public_flags_allow(&corridor,&policy));
+    assert!(gate.public_flags_allow(&corridor, &policy));
     policies.set_paused(&true);
-    assert!(!gate.public_flags_allow(&corridor,&policy));
+    assert!(!gate.public_flags_allow(&corridor, &policy));
     policies.set_paused(&false);
-    assert!(gate.public_flags_allow(&corridor,&policy));
-    corridors.set_enabled(&corridor,&false);
-    assert!(!gate.public_flags_allow(&corridor,&policy));
+    assert!(gate.public_flags_allow(&corridor, &policy));
+    corridors.set_enabled(&corridor, &false);
+    assert!(!gate.public_flags_allow(&corridor, &policy));
 }
 
 #[test]
-fn invalid_arguments_and_unknown_registry_addresses_never_authorize(){
-    let env=Env::default();
+fn invalid_arguments_and_unknown_registry_addresses_never_authorize() {
+    let env = Env::default();
     env.mock_all_auths();
-    let admin=Address::generate(&env);
-    let unknown_corridor=Address::generate(&env);
-    let unknown_policy=Address::generate(&env);
-    let gate_address=env.register(GovernanceGate,(
-        admin,unknown_corridor,unknown_policy
-    ));
-    let gate=GovernanceGateClient::new(&env,&gate_address);
-    let valid=String::from_str(&env,"public_candidate_only");
-    let empty=String::from_str(&env,"");
-    let oversized=String::from_str(&env,&"x".repeat(129));
-    assert!(!gate.public_flags_allow(&valid,&valid));
-    assert!(!gate.public_flags_allow(&empty,&valid));
-    assert!(!gate.public_flags_allow(&valid,&empty));
-    assert!(!gate.public_flags_allow(&oversized,&valid));
-    assert!(!gate.public_flags_allow(&valid,&oversized));
+    let admin = Address::generate(&env);
+    let unknown_corridor = Address::generate(&env);
+    let unknown_policy = Address::generate(&env);
+    let gate_address = env.register(GovernanceGate, (admin, unknown_corridor, unknown_policy));
+    let gate = GovernanceGateClient::new(&env, &gate_address);
+    let valid = String::from_str(&env, "public_candidate_only");
+    let empty = String::from_str(&env, "");
+    let oversized = String::from_str(&env, &"x".repeat(129));
+    assert!(!gate.public_flags_allow(&valid, &valid));
+    assert!(!gate.public_flags_allow(&empty, &valid));
+    assert!(!gate.public_flags_allow(&valid, &empty));
+    assert!(!gate.public_flags_allow(&oversized, &valid));
+    assert!(!gate.public_flags_allow(&valid, &oversized));
 }
