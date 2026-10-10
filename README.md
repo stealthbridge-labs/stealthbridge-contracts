@@ -54,7 +54,9 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo build --workspace --locked --target wasm32v1-none --release
 python3 -m unittest discover -s scripts -p 'test_*.py'
 python3 scripts/artifacts.py
+python3 scripts/verify_artifacts.py
 python3 scripts/validate_manifest.py
+python3 scripts/preflight_testnet.py
 python3 scripts/benchmark.py
 ```
 
@@ -67,14 +69,16 @@ remains `not-deployed`: a local build is not evidence of deployment, settlement,
 or verified network compatibility. Confirm the target network's protocol before
 any separately authorized deployment.
 
-Local verification on macOS ARM64 with the pinned toolchain: seven workspace
-unit tests passed, the separate benchmark passed all 22 scenarios, and Clippy
-passed with warnings denied. The two isolated corridor WASM builds matched
-(6,549 bytes). The authorization/restoration tests use the local SDK host;
-real signatures, network restoration fees and deployment remain unverified.
+The CI pipeline runs the current workspace tests, Clippy, reproducible
+WASM builds of all three contracts, per-contract ABI hashing, artifact-integrity
+verification, manifest checks and an offline deployment preflight. Historic
+macOS test counts and WASM sizes are not a current release baseline; use
+pinned CI artifacts and `artifacts/provenance.json` for measurements. Local
+Soroban-host tests do **not** verify actual signatures, network restoration
+fees, deployed contracts or payment execution.
 
 ## Architecture
-StealthBridge Business targets **confidential amounts with known parties**; StealthBridge Send targets **shielded relationships**. These require separate privacy primitives with different trust and metadata leakage characteristics. The initial registry is intentionally independent of both until testnet composability is proven.
+StealthBridge Business targets **confidential amounts with known parties**; StealthBridge Send targets **shielded relationships**. These require separate privacy primitives with different trust and metadata leakage characteristics. The governance registries and gate remain intentionally independent of both privacy rails until real Testnet composability is proven.
 
 ## Prior-art and diligence
 Tukar provides a compelling testnet reference for private remittances, proofs and compliance. StealthBridge's proposed differentiators are multi-provider tenancy, modular settlement adapters, B2B confidentiality, stablecoin issuer controls, and public SDK surfaces. These are planned capabilities, not shipped claims.
