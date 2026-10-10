@@ -17,13 +17,17 @@ clean checkout for releasable evidence. Ignored build products are excluded.
 Artifact generation rejects source changes during its run. The benchmark rejects
 stale build provenance or source changes during measurement.
 
-`scripts/artifacts.py` builds the corridor WASM twice with separate temporary
-target directories, remapped source/target paths, no incremental compilation,
-and the workspace release profile. It rejects different bytes. This proves local
-repeatability under the recorded toolchain, not universal reproducibility across
-arbitrary operating systems or future compilers. `SHA256SUMS` covers the WASM,
-the ABI decoded from its spec section by the CLI, and provenance. The workspace
-CI also compiles the policy contract; its behavior is outside these three issues.
+`scripts/artifacts.py` builds all three workspace contracts (corridor registry,
+policy registry, governance gate) twice in separate temporary target directories,
+with remapped source/target paths and no incremental compilation. Differences in
+**any** contract WASM fail the build. The pinned Stellar CLI extracts the
+interface from each compiled WASM spec section. The per-contract hashes and sizes
+are recorded under `contractArtifacts` in `artifacts/provenance.json`.
+`SHA256SUMS` covers all three WASM files, all three extracted ABIs, and the
+provenance. `python3 scripts/verify_artifacts.py` independently rehashes the
+files and verifies strict inventory and SHA256SUMS ordering; CI also exercises
+negative tampering fixtures. This proves local repeatability under the recorded
+toolchain, not universal reproducibility or an on-chain deployment.
 
 ## Authorization and lifetime tests
 
