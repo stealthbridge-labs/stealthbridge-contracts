@@ -239,9 +239,13 @@ fn invalid_and_paused_corridors_never_appear_active() {
     client.set_paused(&true);
     assert!(!client.is_enabled(&valid));
 
-    // A governance write may occur during a global pause, but no reader
-    // may interpret the stored flag as evidence of active payment capacity.
-    f.write(&valid, true);
+    // A valid admin cannot stage enabled flags during the emergency pause.
+    f.auth(&f.admin, "set_enabled", (valid.clone(), true).into_val(&f.env));
+    assert_eq!(client.try_set_enabled(&valid, &true), Err(Ok(RegistryError::Paused)));
+    // Disabling entries while paused is still permitted.
+    f.write(&valid, false);
+    f.auth(&f.admin, "set_paused", (false,).into_val(&f.env));
+    client.set_paused(&false);
     assert!(!client.is_enabled(&valid));
 }
 
