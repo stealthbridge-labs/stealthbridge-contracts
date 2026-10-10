@@ -4,6 +4,27 @@
 
 **Engineering roadmap:** [View the repository-specific plan](ROADMAP.md).
 
+## Rust-first Soroban engineering
+
+**All on-chain StealthBridge smart contracts are written in Rust and compiled to WASM.**
+The Python scripts under `scripts/` are off-chain maintainers' build, provenance,
+deployment-preflight, and test utilities—not a Python payment protocol.
+Counting their individual test files can make GitHub's language breakdown
+look Python-heavy even though Soroban validators execute compiled Rust WASM.
+
+The [Rust-first architecture and Python-tooling plan](docs/RUST-FIRST-SOROBAN.md)
+explains the exact boundaries and how we are progressively moving source
+audits and selected release tooling to native Rust without losing digest
+verification. CI now compiles and exercises `tools/source-audit.rs` with
+`rustc` alongside all three Soroban crates.
+
+**New actual on-chain Rust methods:** `PolicyRegistry::is_effective_commitment`
+binds an approved revision and `BytesN<32>` public commitment;
+`GovernanceGate::public_flags_allow_commitment` checks the bound policy
+and corridor through Soroban cross-contract invocations; and
+`GovernanceGate::check_commitment_batch` processes at most eight
+ordered public governance decisions with an explicit oversize error.
+These do **not** prove privacy, transfer funds, or authorize fiat payout.
 ## Soroban architecture: three contracts and the route to Testnet
 
 **Full engineering guide:** [Soroban architecture, source-to-WASM provenance, wallet signing boundaries, and delivery milestones](docs/ARCHITECTURE-AND-DELIVERY.md).
@@ -34,7 +55,9 @@ Future audited private rail and settlement adapter (NOT implemented)
 > **Status:** research-stage Stellar **testnet-only** protocol. Three **public governance Soroban contracts** (corridor registry, policy registry, read-only governance gate) are compiled and tested as source; no verified on-chain deployments, privacy proofs, or fund-moving settlement primitives exist.
 
 ## What is here?
-- \`contracts/corridor-registry\`: minimal authorized corridor enablement example.
+- `contracts/corridor-registry`: authorized and pausable on-chain public corridor governance.
+- `contracts/policy-registry`: revisioned public commitments and strict commitment matching.
+- `contracts/governance-gate`: fail-closed cross-registry and bounded batch reads in Rust.
 - \`docs/PROTOCOL-ARCHITECTURE.md\`: confidentiality vs anonymity, issuer-controlled stablecoins, planned boundaries.
 - \`docs/TESTPLAN.md\`: formal verification milestones, no credentials required.
 - \`deployments/testnet/manifest.json\`: truthfully empty deployment manifest.
@@ -52,6 +75,8 @@ cargo fmt --all -- --check
 cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo build --workspace --locked --target wasm32v1-none --release
+rustc --edition=2021 --test -D warnings tools/source-audit.rs -o /tmp/soroban-audit-tests
+/tmp/soroban-audit-tests
 python3 -m unittest discover -s scripts -p 'test_*.py'
 python3 scripts/artifacts.py
 python3 scripts/verify_artifacts.py
