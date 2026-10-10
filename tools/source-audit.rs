@@ -33,6 +33,30 @@ fn report_assert(ok: bool, requirement: &str) -> Result<(), Box<dyn Error>> {
 fn audit() -> Result<(), Box<dyn Error>> {
     report_assert(
         has_signature(
+            CORRIDOR,
+            "approve_config",
+            "env:Env,corridor:String,config_digest:BytesN<32>,expires_at_ledger:u32,",
+            "Result<(),RegistryError>",
+        ),
+        "administrator-controlled corridor approval must bind a digest and an expiry",
+    )?;
+    report_assert(
+        has_signature(
+            CORRIDOR,
+            "is_enabled_with_digest",
+            "env:Env,corridor:String,expected_digest:BytesN<32>,",
+            "bool",
+        ),
+        "public corridor reads must check the exact digest",
+    )?;
+    report_assert(
+        CORRIDOR.contains("expires_at_ledger.checked_sub(current)")
+            && CORRIDOR.contains("span == 0 || span > 100_000")
+            && CORRIDOR.contains("remove(&DataKey::Approval(corridor.clone()))"),
+        "corridor approval expiry must be bounded and disabling must revoke the digest",
+    )?;
+    report_assert(
+        has_signature(
             POLICY,
             "is_effective_commitment",
             "env:Env,id:String,expected_revision:u32,expected_commitment:BytesN<32>,",
