@@ -2,7 +2,7 @@
 //! Immutable, read-only cross-registry governance gate. It is not a payment,
 //! privacy proof, compliance authorization, issuer or liquidity oracle.
 use soroban_sdk::{
-    contract, contractimpl, contracttype, Address, BytesN, Env, IntoVal, String, Symbol, Val, Vec,
+    contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, IntoVal, String, Symbol, Val, Vec,
 };
 
 #[contracttype]
@@ -13,6 +13,23 @@ enum Key {
     PolicyRegistry,
 }
 
+/// Public policy versions/commitments to check atomically in one ledger.
+/// These are governance metadata, not private witnesses or proof claims.
+#[contracttype]
+#[derive(Clone)]
+pub struct GovernanceCheck {
+    pub corridor: String,
+    pub policy: String,
+    pub expected_revision: u32,
+    pub expected_commitment: BytesN<32>,
+}
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u32)]
+pub enum GateError {
+    InvalidBatchSize = 1,
+}
 #[contract]
 pub struct GovernanceGate;
 
@@ -59,6 +76,28 @@ impl GovernanceGate {
         env.storage().instance().get(&Key::PolicyRegistry)
     }
 
+    /// Bounded, ordered public-governance batch. On-chain cross-contract reads
+    /// are relatively expensive; reject empty and >8 batches explicitly.
+    /// Every result is independent and fail-closed; no writes or signatures.
+    pub fn check_commitment_batch(
+        env: Env,
+        checks: Vec<GovernanceCheck>,
+    ) -> Result<Vec<bool>, GateError> {
+        if checks.is_empty() || checks.len() > 8 {
+            return Err(GateError::InvalidBatchSize);
+        }
+        let mut verdicts = Vec::new(&env);
+        for check in checks.iter() {
+            verdicts.push_back(Self::public_flags_allow_commitment(
+                env.clone(),
+                check.corridor,
+                check.policy,
+                check.expected_revision,
+                check.expected_commitment,
+            ));
+        }
+        Ok(verdicts)
+    }
     /// An exact public policy version/commitment is required in addition
     /// to the corridor flag. This rejects stale/substituted policy bindings.
     /// True is public governance agreement, NEVER settlement authorization.
