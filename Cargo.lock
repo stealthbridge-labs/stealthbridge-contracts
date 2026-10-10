@@ -1747,6 +1747,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "stealthbridge-governance-gate"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+ "stealthbridge-corridor-registry",
+ "stealthbridge-policy-registry",
+]
+
+[[package]]
 name = "stealthbridge-policy-registry"
 version = "0.1.0"
 dependencies = [
