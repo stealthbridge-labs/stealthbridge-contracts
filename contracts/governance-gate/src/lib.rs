@@ -69,16 +69,26 @@ impl GovernanceGate {
         expected_revision: u32,
         expected_commitment: BytesN<32>,
     ) -> bool {
-        if corridor.is_empty() || corridor.len() > 128
-            || policy.is_empty() || policy.len() > 128
+        if corridor.is_empty()
+            || corridor.len() > 128
+            || policy.is_empty()
+            || policy.len() > 128
             || expected_revision == 0
         {
             return false;
         }
-        let Some(corridor_registry) = env.storage().instance().get::<_, Address>(&Key::CorridorRegistry) else {
+        let Some(corridor_registry) = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&Key::CorridorRegistry)
+        else {
             return false;
         };
-        let Some(policy_registry) = env.storage().instance().get::<_, Address>(&Key::PolicyRegistry) else {
+        let Some(policy_registry) = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&Key::PolicyRegistry)
+        else {
             return false;
         };
         if !query_enabled(&env, &corridor_registry, "is_enabled", corridor) {
