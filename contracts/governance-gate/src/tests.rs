@@ -1,7 +1,7 @@
 extern crate std;
 
 use super::*;
-use soroban_sdk::{testutils::Address as _, BytesN, String};
+use soroban_sdk::{testutils::Address as _, BytesN, String, Vec};
 use stealthbridge_corridor_registry::{CorridorRegistry, CorridorRegistryClient};
 use stealthbridge_policy_registry::{PolicyRecord, PolicyRegistry, PolicyRegistryClient};
 
@@ -103,6 +103,70 @@ fn commitment_bound_gate_requires_exact_active_policy_and_corridor() {
     policies.set_paused(&false);
     corridors.set_enabled(&corridor, &false);
     assert!(!gate.public_flags_allow_commitment(&corridor, &policy, &2, &v2));
+}
+#[test]
+fn bounded_batch_returns_ordered_flags_and_rejects_excessive_work() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let corridor_address = env.register(CorridorRegistry, (admin.clone(),));
+    let policy_address = env.register(PolicyRegistry, (admin.clone(),));
+    let gate_address = env.register(
+        GovernanceGate,
+        (admin, corridor_address.clone(), policy_address.clone()),
+    );
+    let gate = GovernanceGateClient::new(&env, &gate_address);
+    let corridors = CorridorRegistryClient::new(&env, &corridor_address);
+    let policies = PolicyRegistryClient::new(&env, &policy_address);
+    let corridor = String::from_str(&env, "batch_corridor");
+    let missing = String::from_str(&env, "missing_corridor");
+    let policy = String::from_str(&env, "batch_policy");
+    let commitment = BytesN::from_array(&env, &[77_u8; 32]);
+    corridors.set_enabled(&corridor, &true);
+    policies.set_rule(
+        &policy,
+        &PolicyRecord {
+            revision: 9,
+            enabled: true,
+            public_commitment: commitment.clone(),
+        },
+    );
+    let allowed = GovernanceCheck {
+        corridor: corridor.clone(),
+        policy: policy.clone(),
+        expected_revision: 9,
+        expected_commitment: commitment.clone(),
+    };
+    let unavailable = GovernanceCheck {
+        corridor: missing,
+        policy,
+        expected_revision: 9,
+        expected_commitment: commitment,
+    };
+    let mut checks = Vec::new(&env);
+    checks.push_back(allowed.clone());
+    checks.push_back(unavailable);
+    let results = gate.check_commitment_batch(&checks);
+    assert_eq!(results.len(), 2);
+    assert_eq!(results.get(0), Some(true));
+    assert_eq!(results.get(1), Some(false));
+    let empty = Vec::<GovernanceCheck>::new(&env);
+    assert_eq!(
+        gate.try_check_commitment_batch(&empty),
+        Err(Ok(GateError::InvalidBatchSize))
+    );
+    for _ in 2..9 {
+        checks.push_back(allowed.clone());
+    }
+    assert_eq!(checks.len(), 9);
+    assert_eq!(
+        gate.try_check_commitment_batch(&checks),
+        Err(Ok(GateError::InvalidBatchSize))
+    );
+    corridors.set_paused(&true);
+    let mut single = Vec::new(&env);
+    single.push_back(allowed);
+    assert_eq!(gate.check_commitment_batch(&single).get(0), Some(false));
 }
 #[test]
 fn invalid_arguments_and_unknown_registry_addresses_never_authorize() {
