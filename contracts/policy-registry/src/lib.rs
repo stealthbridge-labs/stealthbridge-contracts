@@ -31,6 +31,7 @@ pub enum PolicyError {
     StaleRevision = 3,
     InvalidRuleId = 4,
     NoPendingAdmin = 5,
+    Paused = 6,
 }
 #[contract]
 pub struct PolicyRegistry;
@@ -115,6 +116,10 @@ impl PolicyRegistry {
         }
         if record.revision == 0 {
             return Err(PolicyError::InvalidRevision);
+        }
+        // A pause permits revocation, never staging an enabled policy.
+        if record.enabled && Self::is_paused(env.clone()) {
+            return Err(PolicyError::Paused);
         }
         let key = DataKey::Rule(id);
         if let Some(current) = env.storage().persistent().get::<_, PolicyRecord>(&key) {
