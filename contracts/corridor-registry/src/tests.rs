@@ -257,6 +257,85 @@ fn invalid_and_paused_corridors_never_appear_active() {
 }
 
 #[test]
+fn digest_bound_corridor_approval_is_expiring_and_revocable() {
+    let f = Fixture::new();
+    let client = f.client();
+    let id = String::from_str(&f.env, "public_vetted_corridor");
+    let digest = BytesN::from_array(&f.env, &[3_u8; 32]);
+    let forged = BytesN::from_array(&f.env, &[4_u8; 32]);
+    assert!(!client.is_enabled_with_digest(&id, &digest));
+    f.write(&id, true);
+    assert!(!client.is_enabled_with_digest(&id, &digest));
+    f.auth(
+        &f.admin,
+        "approve_config",
+        (id.clone(), digest.clone(), 110_u32).into_val(&f.env),
+    );
+    client.approve_config(&id, &digest, &110);
+    assert!(client.is_enabled_with_digest(&id, &digest));
+    assert!(!client.is_enabled_with_digest(&id, &forged));
+    f.advance(10);
+    assert!(client.is_enabled_with_digest(&id, &digest));
+    f.advance(1);
+    assert!(!client.is_enabled_with_digest(&id, &digest));
+    // A newly reviewed expiry does not restore a disabled corridor.
+    f.auth(
+        &f.admin,
+        "approve_config",
+        (id.clone(), digest.clone(), 140_u32).into_val(&f.env),
+    );
+    client.approve_config(&id, &digest, &140);
+    f.write(&id, false);
+    assert!(!client.is_enabled_with_digest(&id, &digest));
+    f.write(&id, true);
+    assert!(!client.is_enabled_with_digest(&id, &digest));
+}
+
+#[test]
+fn corridor_approval_rejects_expired_unbounded_paused_and_unauthorized_writes() {
+    let f = Fixture::new();
+    let client = f.client();
+    let id = String::from_str(&f.env, "approval_bounds");
+    let hash = BytesN::from_array(&f.env, &[5_u8; 32]);
+    f.auth(
+        &f.admin,
+        "approve_config",
+        (id.clone(), hash.clone(), 105_u32).into_val(&f.env),
+    );
+    assert_eq!(
+        client.try_approve_config(&id, &hash, &105),
+        Err(Ok(RegistryError::NotEnabled))
+    );
+    f.write(&id, true);
+    for invalid in [100_u32, 100_101_u32, 0_u32] {
+        f.auth(
+            &f.admin,
+            "approve_config",
+            (id.clone(), hash.clone(), invalid).into_val(&f.env),
+        );
+        assert_eq!(
+            client.try_approve_config(&id, &hash, &invalid),
+            Err(Ok(RegistryError::InvalidExpiration))
+        );
+    }
+    f.auth(&f.admin, "set_paused", (true,).into_val(&f.env));
+    client.set_paused(&true);
+    f.auth(
+        &f.admin,
+        "approve_config",
+        (id.clone(), hash.clone(), 110_u32).into_val(&f.env),
+    );
+    assert_eq!(
+        client.try_approve_config(&id, &hash, &110),
+        Err(Ok(RegistryError::Paused))
+    );
+    f.auth(&f.admin, "set_paused", (false,).into_val(&f.env));
+    client.set_paused(&false);
+    f.env.mock_auths(&[]);
+    assert!(client.try_approve_config(&id, &hash, &110).is_err());
+    assert!(!client.is_enabled_with_digest(&id, &hash));
+}
+#[test]
 fn ttl_threshold_boundary_and_read_only_behavior() {
     let f = Fixture::new();
     let id = String::from_str(&f.env, "fixture_ttl");
