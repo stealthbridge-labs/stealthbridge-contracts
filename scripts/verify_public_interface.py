@@ -18,7 +18,7 @@ for name,contract in metadata["contracts"].items():
     assert set(contract["reads"]).isdisjoint(set(contract["writes"])),name
     for method,info in contract["reads"].items():
         assert isinstance(info["args"],list) and len(info["args"]) <= {"corridor-registry":1,"policy-registry":3,"governance-gate":4}[name],name
-        assert info["returns"] in {"Address","Option<Address>","bool","Option<PolicyRecord>"},method
+        assert info["returns"] in {"Address","Option<Address>","bool","Option<PolicyRecord>","Result<Vec<bool>,GateError>"},method
         start=re.search(r"pub fn "+method+r"\s*\(",source)
         assert start is not None,method
         definition=source[start.start():start.start()+320]
@@ -26,9 +26,10 @@ for name,contract in metadata["contracts"].items():
         required={
             ("policy-registry","is_effective_commitment"):["String","u32","BytesN<32>"],
             ("governance-gate","public_flags_allow_commitment"):["String","String","u32","BytesN<32>"],
+            ("governance-gate","check_commitment_batch"):["Vec<GovernanceCheck>"],
         }
         if (name,method) in required:
-            assert info["args"]==required[(name,method)] and info["returns"]=="bool"
+            assert info["args"]==required[(name,method)] and info["returns"]==("Result<Vec<bool>,GateError>" if method=="check_commitment_batch" else "bool")
         for arg in info["args"]:
             assert arg in definition,(name,method,arg)
 print("Soroban public method inventory matches all source contracts; no deployment asserted.")
