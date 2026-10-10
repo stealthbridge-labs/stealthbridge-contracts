@@ -24,9 +24,14 @@ A `deployed` record additionally requires:
   local clean-build `artifacts/provenance.json`. The validator also hashes the
   WASM and ABI bytes and compares them with the record.
 
-Only the corridor artifact is supported by this schema; extend it explicitly
-before recording other contracts. Synthetic IDs exist only inside isolated
-validator tests and must never be copied into the deployment manifest.
+The current **deployment manifest schema** verifies only the corridor registry
+for the older schema-v1 deployed fixture. However, the build pipeline now
+produces reproducible WASM/ABI hashes for **corridor-registry, policy-registry,
+and governance-gate**. Do not mark either newer contract as deployed until the
+manifest schema is explicitly extended and independently checks all deployed
+addresses, on-chain bytecode and constructor-bound dependencies. Synthetic IDs
+exist only inside isolated validator tests and must never be copied into a
+deployment manifest.
 
 After a separately authorized Testnet deployment, a maintainer should:
 
