@@ -135,7 +135,7 @@ impl CorridorRegistry {
         if enabled && Self::is_paused(env.clone()) {
             return Err(RegistryError::Paused);
         }
-        let key = DataKey::Corridor(corridor);
+        let key = DataKey::Corridor(corridor.clone());
         // Revocation clears any previously approved digest. Re-enabling
         // never restores a revoked approval: an admin must review it again.
         if !enabled {
