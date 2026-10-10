@@ -90,6 +90,21 @@ contract StrKey checksum, actual WASM bytes/hash, extracted interfaces,
 constructor-bound dependency addresses, administrator state, and TTL. Compare
 the three WASM and ABI hashes with `artifacts/provenance.json`.
 
+For a signed, already-deployed Testnet installation, create a **local** JSON
+file containing the actual three contract addresses under keys
+`corridor-registry`, `policy-registry`, and `governance-gate`, then run:
+
+```sh
+python3 scripts/verify_onchain_wasm.py --contracts-file YOUR_LOCAL_CONTRACT_IDS.json
+```
+
+This command uses read-only `stellar contract fetch --network testnet`
+invocations and checks byte-for-byte WASM equality against the pinned
+artifacts. It never requests a signer. Confirm your local Stellar CLI
+`testnet` network configuration independently before trusting the fetch.
+Bytecode equality alone **does not verify** successful deploy transactions,
+admin state, or governance-gate constructor bindings; those require separate
+independent on-chain reads and reviewed evidence.
 The current older `deployments/testnet/manifest.json` validator supports
 local consistency checks and does not certify three on-chain deployments.
 **Do not** mark it `deployed` until an updated, independently reviewed
