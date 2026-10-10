@@ -2,7 +2,8 @@
 //! Immutable, read-only cross-registry governance gate. It is not a payment,
 //! privacy proof, compliance authorization, issuer or liquidity oracle.
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, IntoVal, String, Symbol, Val, Vec,
+    contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, IntoVal, String,
+    Symbol, Val, Vec,
 };
 
 #[contracttype]
