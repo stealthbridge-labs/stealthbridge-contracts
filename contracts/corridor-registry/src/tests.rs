@@ -212,6 +212,40 @@ fn missing_wrong_and_stale_admin_auth_rejected_without_state_changes() {
 }
 
 #[test]
+fn invalid_and_paused_corridors_never_appear_active() {
+    let f = Fixture::new();
+    let client = f.client();
+    let empty = String::from_str(&f.env, "");
+    let too_long = String::from_str(&f.env, &"x".repeat(129));
+    let valid = String::from_str(&f.env, "candidate_not_a_payout");
+
+    assert!(!client.is_enabled(&empty));
+    assert!(!client.is_enabled(&too_long));
+    assert!(!client.is_enabled(&valid));
+
+    for invalid in [&empty, &too_long] {
+        f.auth(
+            &f.admin,
+            "set_enabled",
+            (invalid.clone(), true).into_val(&f.env),
+        );
+        assert!(client.try_set_enabled(invalid, &true).is_err());
+        assert!(!client.is_enabled(invalid));
+    }
+
+    f.write(&valid, true);
+    assert!(client.is_enabled(&valid));
+    f.auth(&f.admin, "set_paused", (true,).into_val(&f.env));
+    client.set_paused(&true);
+    assert!(!client.is_enabled(&valid));
+
+    // A governance write may occur during a global pause, but no reader
+    // may interpret the stored flag as evidence of active payment capacity.
+    f.write(&valid, true);
+    assert!(!client.is_enabled(&valid));
+}
+
+#[test]
 fn ttl_threshold_boundary_and_read_only_behavior() {
     let f = Fixture::new();
     let id = String::from_str(&f.env, "fixture_ttl");
