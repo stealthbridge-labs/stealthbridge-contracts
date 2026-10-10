@@ -27,6 +27,11 @@ payments, proof circuits, custody, or fiat settlement work today.
 - `policy-registry`: stores versioned public commitments, admin handover and
   emergency pause. Its effective policy reads never constitute compliance,
   identity, proof or asset verification.
+- `governance-gate`: immutable registry-address references, a single
+  `public_flags_allow(corridor, policy)` read combining both registries, and
+  fail-closed handling of invalid IDs and failed Soroban cross-contract calls.
+  A true result still means *only* public governance flags, not permission
+  to move assets, reveal private notes, or satisfy compliance.
 - Both registries now reject **new enabled entries while paused**, while
   allowing authorized disabling/revocation. This prevents dormant policy
   activations that could unexpectedly take effect after a pause.
