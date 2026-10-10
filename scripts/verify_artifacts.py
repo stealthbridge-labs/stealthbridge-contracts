@@ -35,7 +35,7 @@ def verify(root):
     if not isinstance(artifacts, dict) or set(artifacts) != set(CONTRACT_FILES):
         raise ValueError("all three contract artifacts must be present, with no extra names")
 
-    digests = {"provenance.json": sha256(provenance_bytes)}
+    digests = {}
     for name, (wasm_name, abi_name) in CONTRACT_FILES.items():
         metadata = artifacts[name]
         if not isinstance(metadata, dict) or set(metadata) != {"wasmSha256", "abiSha256", "wasmBytes"}:
@@ -57,6 +57,7 @@ def verify(root):
         raise ValueError("legacy corridor ABI hash differs from evidence")
     if evidence.get("wasmBytes") != artifacts["corridor-registry"]["wasmBytes"]:
         raise ValueError("legacy corridor size differs from evidence")
+    digests["provenance.json"] = sha256(provenance_bytes)
     expected = [f"{digest}  {name}" for name, digest in digests.items()]
     actual = (root / "SHA256SUMS").read_text().splitlines()
     if actual != expected:
