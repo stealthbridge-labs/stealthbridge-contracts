@@ -17,13 +17,14 @@ for name,contract in metadata["contracts"].items():
     assert declared<=methods,(name,sorted(declared-methods))
     assert set(contract["reads"]).isdisjoint(set(contract["writes"])),name
     for method,info in contract["reads"].items():
-        assert isinstance(info["args"],list) and len(info["args"]) <= {"corridor-registry":1,"policy-registry":3,"governance-gate":4}[name],name
+        assert isinstance(info["args"],list) and len(info["args"]) <= {"corridor-registry":2,"policy-registry":3,"governance-gate":4}[name],name
         assert info["returns"] in {"Address","Option<Address>","bool","Option<PolicyRecord>","Result<Vec<bool>,GateError>"},method
         start=re.search(r"pub fn "+method+r"\s*\(",source)
         assert start is not None,method
         definition=source[start.start():start.start()+320]
         # Public governance calls must bind the exact revision/hash types.
         required={
+            ("corridor-registry","is_enabled_with_digest"):["String","BytesN<32>"],
             ("policy-registry","is_effective_commitment"):["String","u32","BytesN<32>"],
             ("governance-gate","public_flags_allow_commitment"):["String","String","u32","BytesN<32>"],
             ("governance-gate","check_commitment_batch"):["Vec<GovernanceCheck>"],
