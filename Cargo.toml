@@ -1,5 +1,5 @@
 [workspace]
-members = ["contracts/corridor-registry","contracts/policy-registry"]
+members = ["contracts/corridor-registry","contracts/policy-registry","contracts/governance-gate"]
 resolver = "2"
 
 [workspace.package]
