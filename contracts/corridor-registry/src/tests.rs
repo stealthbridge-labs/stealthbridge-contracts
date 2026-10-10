@@ -291,11 +291,7 @@ fn pause_renews_instance_but_not_corridor() {
     assert!(!f.client().is_enabled(&id));
     // A paused registry cannot renew an enabled entry; disabling it
     // still renews the persistent TTL without changing the pause state.
-    f.auth(
-        &f.admin,
-        "set_enabled",
-        (id.clone(), true).into_val(&f.env),
-    );
+    f.auth(&f.admin, "set_enabled", (id.clone(), true).into_val(&f.env));
     assert_eq!(
         f.client().try_set_enabled(&id, &true),
         Err(Ok(RegistryError::Paused))
