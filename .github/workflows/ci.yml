@@ -19,6 +19,12 @@ jobs:
           tar -xzf "$RUNNER_TEMP/stellar/stellar-cli-27.1.0-x86_64-unknown-linux-gnu.tar.gz" -C "$RUNNER_TEMP/stellar"
           echo "$RUNNER_TEMP/stellar" >> "$GITHUB_PATH"
       - run: cargo fmt --all -- --check
+      - name: Audit Soroban source signatures with native Rust (not Python)
+        run: |
+          rustc --edition=2021 -D warnings tools/source-audit.rs -o "$RUNNER_TEMP/soroban-source-audit"
+          "$RUNNER_TEMP/soroban-source-audit"
+          rustc --edition=2021 --test -D warnings tools/source-audit.rs -o "$RUNNER_TEMP/soroban-source-audit-tests"
+          "$RUNNER_TEMP/soroban-source-audit-tests"
       - run: cargo test --workspace --locked
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo build --workspace --locked --target wasm32v1-none --release
