@@ -4,7 +4,7 @@
 //!
 //! "Enabled" is a governance flag, never a guarantee of available liquidity.
 
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, Env, String};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, String};
 
 const TTL_THRESHOLD: u32 = 17_280;
 const TTL_EXTEND: u32 = 30 * TTL_THRESHOLD;
@@ -16,8 +16,17 @@ enum DataKey {
     PendingAdmin,
     Paused,
     Corridor(String),
+    Approval(String),
 }
 
+/// Public, on-chain approval of a *specific* off-chain corridor config.
+/// A digest is not a verification of a provider, issuer or available funds.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CorridorApproval {
+    pub config_digest: BytesN<32>,
+    pub expires_at_ledger: u32,
+}
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
@@ -26,6 +35,8 @@ pub enum RegistryError {
     NoPendingAdmin = 2,
     InvalidCorridorId = 3,
     Paused = 4,
+    InvalidExpiration = 5,
+    NotEnabled = 6,
 }
 
 #[contract]
@@ -125,6 +136,13 @@ impl CorridorRegistry {
             return Err(RegistryError::Paused);
         }
         let key = DataKey::Corridor(corridor);
+        // Revocation clears any previously approved digest. Re-enabling
+        // never restores a revoked approval: an admin must review it again.
+        if !enabled {
+            env.storage()
+                .persistent()
+                .remove(&DataKey::Approval(corridor.clone()));
+        }
         env.storage().persistent().set(&key, &enabled);
         env.storage()
             .persistent()
@@ -133,6 +151,62 @@ impl CorridorRegistry {
         Ok(())
     }
 
+    /// An administrator approves public evidence of a specific corridor
+    /// configuration for at most 100,000 additional ledger sequences.
+    /// Requires an already-enabled corridor and a non-paused registry.
+    pub fn approve_config(
+        env: Env,
+        corridor: String,
+        config_digest: BytesN<32>,
+        expires_at_ledger: u32,
+    ) -> Result<(), RegistryError> {
+        authorize_admin(&env)?;
+        if corridor.is_empty() || corridor.len() > 128 {
+            return Err(RegistryError::InvalidCorridorId);
+        }
+        if Self::is_paused(env.clone()) {
+            return Err(RegistryError::Paused);
+        }
+        if !Self::is_enabled(env.clone(), corridor.clone()) {
+            return Err(RegistryError::NotEnabled);
+        }
+        let current = env.ledger().sequence();
+        let Some(span) = expires_at_ledger.checked_sub(current) else {
+            return Err(RegistryError::InvalidExpiration);
+        };
+        if span == 0 || span > 100_000 {
+            return Err(RegistryError::InvalidExpiration);
+        }
+        let key = DataKey::Approval(corridor);
+        env.storage().persistent().set(
+            &key,
+            &CorridorApproval {
+                config_digest,
+                expires_at_ledger,
+            },
+        );
+        env.storage()
+            .persistent()
+            .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND);
+        renew_instance(&env);
+        Ok(())
+    }
+
+    /// Strict public read: checks enabled state, exact digest and ledger
+    /// expiration. No private data, liquidity or settlement is implied.
+    pub fn is_enabled_with_digest(env: Env, corridor: String, expected_digest: BytesN<32>) -> bool {
+        if !Self::is_enabled(env.clone(), corridor.clone()) {
+            return false;
+        }
+        matches!(
+            env.storage()
+                .persistent()
+                .get::<_, CorridorApproval>(&DataKey::Approval(corridor)),
+            Some(approval)
+                if approval.config_digest == expected_digest
+                    && env.ledger().sequence() <= approval.expires_at_ledger
+        )
+    }
     pub fn is_enabled(env: Env, corridor: String) -> bool {
         if corridor.is_empty() || corridor.len() > 128 {
             return false;
