@@ -42,7 +42,11 @@ def main():
         raise SystemExit(f"Unexpected compiler: {rust}")
     OUT.mkdir(exist_ok=True)
     source = source_snapshot()
-    name = "stealthbridge_corridor_registry.wasm"
+    contracts = {
+        "corridor-registry": ("stealthbridge_corridor_registry.wasm", "corridor-registry.abi.json"),
+        "policy-registry": ("stealthbridge_policy_registry.wasm", "policy-registry.abi.json"),
+        "governance-gate": ("stealthbridge_governance_gate.wasm", "governance-gate.abi.json"),
+    }
     builds = []
     for _ in range(2):
         with tempfile.TemporaryDirectory(prefix="registry-build-") as directory:
@@ -50,30 +54,47 @@ def main():
             env.update(CARGO_TARGET_DIR=directory, CARGO_INCREMENTAL="0",
                        RUSTFLAGS=f"--remap-path-prefix={ROOT}=/source --remap-path-prefix={directory}=/target")
             subprocess.run(["cargo", "build", "--locked", "--release", "--target", "wasm32v1-none",
-                            "-p", "stealthbridge-corridor-registry"], cwd=ROOT, env=env, check=True)
-            builds.append((Path(directory) / "wasm32v1-none/release" / name).read_bytes())
-    if builds[0] != builds[1]:
-        raise SystemExit("Isolated WASM builds differ")
-    wasm = OUT / name
-    wasm.write_bytes(builds[0])
-    # CLI decodes the actual WASM spec section, not a hand-maintained interface.
-    abi = run(cli, "contract", "info", "interface", "--wasm", str(wasm), "--output", "json") + "\n"
-    (OUT / "corridor-registry.abi.json").write_text(abi)
+                            "--workspace"], cwd=ROOT, env=env, check=True)
+            artifacts = {
+                name: (Path(directory) / "wasm32v1-none/release" / wasm_name).read_bytes()
+                for name, (wasm_name, _) in contracts.items()
+            }
+            builds.append(artifacts)
+    for name in contracts:
+        if builds[0][name] != builds[1][name]:
+            raise SystemExit(f"Isolated WASM builds differ for {name}")
+
+    digests = {}
+    files = []
+    for name, (wasm_name, abi_name) in contracts.items():
+        wasm = OUT / wasm_name
+        wasm.write_bytes(builds[0][name])
+        abi = run(cli, "contract", "info", "interface", "--wasm", str(wasm), "--output", "json") + "\n"
+        abi_path = OUT / abi_name
+        abi_path.write_text(abi)
+        files.extend((wasm, abi_path))
+        digests[name] = {
+            "wasmSha256": sha(builds[0][name]),
+            "abiSha256": sha(abi.encode()),
+            "wasmBytes": len(builds[0][name])
+        }
     if source_snapshot() != source:
         raise SystemExit("Source changed during artifact generation; rebuild a stable checkout")
+    corridor = digests["corridor-registry"]
     metadata = {
         "schemaVersion": 1, "artifactVersion": "corridor-registry/0.1.0",
         **source,
-        "wasmSha256": sha(builds[0]), "abiSha256": sha(abi.encode()),
-        "wasmBytes": len(builds[0]), "rustc": rust, "stellarCli": cli_version,
+        "wasmSha256": corridor["wasmSha256"], "abiSha256": corridor["abiSha256"],
+        "wasmBytes": corridor["wasmBytes"], "contractArtifacts": digests,
+        "rustc": rust, "stellarCli": cli_version,
         "sdk": "27.0.6", "sdkMajor": 27, "targetProtocol": 27,
         "target": "wasm32v1-none", "reproducibleBuilds": 2,
         "cargoLockSha256": sha((ROOT / "Cargo.lock").read_bytes()),
     }
     (OUT / "provenance.json").write_text(json.dumps(metadata, indent=2) + "\n")
+    files.append(OUT / "provenance.json")
     (OUT / "SHA256SUMS").write_text("".join(
-        f"{sha(path.read_bytes())}  {path.name}\n"
-        for path in [wasm, OUT / "corridor-registry.abi.json", OUT / "provenance.json"]
+        f"{sha(path.read_bytes())}  {path.name}\n" for path in files
     ))
     print(json.dumps(metadata, indent=2))
 
