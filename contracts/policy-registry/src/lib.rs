@@ -213,6 +213,32 @@ mod tests {
     }
 
     #[test]
+    fn emergency_pause_refuses_new_enabled_policy_but_allows_revocation() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let admin = Address::generate(&env);
+        let contract = env.register(PolicyRegistry, (admin,));
+        let client = PolicyRegistryClient::new(&env, &contract);
+        let name = String::from_str(&env, "testnet_public_policy");
+        let commitment = BytesN::from_array(&env, &[9u8; 32]);
+        client.set_rule(&name, &PolicyRecord {
+            revision: 1, enabled: true, public_commitment: commitment.clone(),
+        });
+        assert!(client.is_effective(&name));
+        client.set_paused(&true);
+        let activation = PolicyRecord {
+            revision: 2, enabled: true, public_commitment: commitment.clone(),
+        };
+        assert_eq!(client.try_set_rule(&name, &activation), Err(Ok(PolicyError::Paused)));
+        assert_eq!(client.get_rule(&name).unwrap().revision, 1);
+        client.set_rule(&name, &PolicyRecord {
+            revision: 2, enabled: false, public_commitment: commitment,
+        });
+        client.set_paused(&false);
+        assert!(!client.is_effective(&name));
+    }
+
+    #[test]
     fn administrator_must_be_explicitly_accepted_and_nomination_can_cancel() {
         let env = Env::default();
         env.mock_all_auths();
