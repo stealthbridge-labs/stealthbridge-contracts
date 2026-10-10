@@ -4,7 +4,9 @@
 //!
 //! "Enabled" is a governance flag, never a guarantee of available liquidity.
 
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, String};
+use soroban_sdk::{
+    contract, contracterror, contractimpl, contracttype, Address, BytesN, Env, String,
+};
 
 const TTL_THRESHOLD: u32 = 17_280;
 const TTL_EXTEND: u32 = 30 * TTL_THRESHOLD;
