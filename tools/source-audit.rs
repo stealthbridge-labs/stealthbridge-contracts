@@ -19,7 +19,9 @@ fn compact(source: &str) -> String {
 fn has_signature(source: &str, method: &str, parameters: &str, returns: &str) -> bool {
     let compacted = compact(source);
     let expected = format!("pubfn{method}({parameters})->{returns}{{");
-    compacted.contains(&expected)
+    let without_trailing_comma = parameters.trim_end_matches(',');
+    let alternate = format!("pubfn{method}({without_trailing_comma})->{returns}{{");
+    compacted.contains(&expected) || compacted.contains(&alternate)
 }
 
 fn report_assert(ok: bool, requirement: &str) -> Result<(), Box<dyn Error>> {
