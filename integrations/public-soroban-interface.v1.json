@@ -24,6 +24,13 @@
             "String"
           ],
           "returns": "bool"
+        },
+        "is_enabled_with_digest": {
+          "args": [
+            "String",
+            "BytesN<32>"
+          ],
+          "returns": "bool"
         }
       },
       "writes": [
@@ -31,7 +38,8 @@
         "cancel_admin_proposal",
         "accept_admin",
         "set_paused",
-        "set_enabled"
+        "set_enabled",
+        "approve_config"
       ]
     },
     "policy-registry": {
