@@ -273,6 +273,52 @@ mod tests {
     }
 
     #[test]
+    fn public_policy_commitment_is_revision_bound_and_fail_closed() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let admin = Address::generate(&env);
+        let contract = env.register(PolicyRegistry, (admin,));
+        let client = PolicyRegistryClient::new(&env, &contract);
+        let name = String::from_str(&env, "testnet_versioned_policy");
+        let correct = BytesN::from_array(&env, &[7_u8; 32]);
+        let wrong = BytesN::from_array(&env, &[8_u8; 32]);
+        assert!(!client.is_effective_commitment(&name, &1, &correct));
+        client.set_rule(
+            &name,
+            &PolicyRecord {
+                revision: 1,
+                enabled: true,
+                public_commitment: correct.clone(),
+            },
+        );
+        assert!(client.is_effective_commitment(&name, &1, &correct));
+        assert!(!client.is_effective_commitment(&name, &0, &correct));
+        assert!(!client.is_effective_commitment(&name, &2, &correct));
+        assert!(!client.is_effective_commitment(&name, &1, &wrong));
+        client.set_rule(
+            &name,
+            &PolicyRecord {
+                revision: 2,
+                enabled: true,
+                public_commitment: wrong.clone(),
+            },
+        );
+        assert!(!client.is_effective_commitment(&name, &1, &correct));
+        assert!(client.is_effective_commitment(&name, &2, &wrong));
+        client.set_paused(&true);
+        assert!(!client.is_effective_commitment(&name, &2, &wrong));
+        client.set_rule(
+            &name,
+            &PolicyRecord {
+                revision: 3,
+                enabled: false,
+                public_commitment: wrong.clone(),
+            },
+        );
+        client.set_paused(&false);
+        assert!(!client.is_effective_commitment(&name, &3, &wrong));
+    }
+    #[test]
     fn administrator_must_be_explicitly_accepted_and_nomination_can_cancel() {
         let env = Env::default();
         env.mock_all_auths();
