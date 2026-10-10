@@ -19,7 +19,7 @@ A language chart can count tooling and fixtures; it is not an accurate diagram o
 
 ## Current implemented Rust features
 
-- Corridor registry: administrator-gated public flags; two-step admin transition; emergency stop; persistent storage TTL; invalid-identifier rejection.
+- Corridor registry: administrator-gated public flags; two-step admin transition; emergency stop; persistent storage TTL; invalid-identifier rejection; **digest-bound public configuration approvals with ledger-sequence expiry and revocation on disable**.
 - Policy registry: monotonically increasing public `PolicyRecord` revisions, opaque 32-byte **public** commitment, administrator auth and revocation. `is_effective_commitment(id, expected_revision, expected_commitment)` now rejects stale versions and substituted commitments.
 - Governance gate: immutable references to approved registry addresses, fail-closed Soroban cross-contract reads, public `public_flags_allow`, stricter `public_flags_allow_commitment`, and `check_commitment_batch` limited to **eight public checks per call**.
 - Adversarial Rust tests: missing registries, disabled/paused flags, bad identifiers, stale commitment/revision, admin handover, TTL, malformed inputs and oversized work requests.
