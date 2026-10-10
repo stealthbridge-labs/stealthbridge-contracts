@@ -221,19 +221,34 @@ mod tests {
         let client = PolicyRegistryClient::new(&env, &contract);
         let name = String::from_str(&env, "testnet_public_policy");
         let commitment = BytesN::from_array(&env, &[9u8; 32]);
-        client.set_rule(&name, &PolicyRecord {
-            revision: 1, enabled: true, public_commitment: commitment.clone(),
-        });
+        client.set_rule(
+            &name,
+            &PolicyRecord {
+                revision: 1,
+                enabled: true,
+                public_commitment: commitment.clone(),
+            },
+        );
         assert!(client.is_effective(&name));
         client.set_paused(&true);
         let activation = PolicyRecord {
-            revision: 2, enabled: true, public_commitment: commitment.clone(),
+            revision: 2,
+            enabled: true,
+            public_commitment: commitment.clone(),
         };
-        assert_eq!(client.try_set_rule(&name, &activation), Err(Ok(PolicyError::Paused)));
+        assert_eq!(
+            client.try_set_rule(&name, &activation),
+            Err(Ok(PolicyError::Paused))
+        );
         assert_eq!(client.get_rule(&name).unwrap().revision, 1);
-        client.set_rule(&name, &PolicyRecord {
-            revision: 2, enabled: false, public_commitment: commitment,
-        });
+        client.set_rule(
+            &name,
+            &PolicyRecord {
+                revision: 2,
+                enabled: false,
+                public_commitment: commitment,
+            },
+        );
         client.set_paused(&false);
         assert!(!client.is_effective(&name));
     }
