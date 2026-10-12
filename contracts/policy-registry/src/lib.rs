@@ -502,11 +502,7 @@ mod tests {
                     client.is_effective_commitment(&id, &revision, &commitment),
                     enabled
                 );
-                assert!(!client.is_effective_commitment(
-                    &id,
-                    &(revision + 1),
-                    &commitment
-                ));
+                assert!(!client.is_effective_commitment(&id, &(revision + 1), &commitment));
                 assert_eq!(
                     client.try_set_rule(&id, &rule),
                     Err(Ok(PolicyError::StaleRevision))
@@ -558,5 +554,4 @@ mod tests {
             assert_eq!(client.admin(), admin);
         }
     }
-
 }
