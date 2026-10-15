@@ -158,9 +158,10 @@ impl PolicyRegistry {
         expected_revision: u32,
         expected_commitment: BytesN<32>,
     ) -> bool {
-        if expected_revision == 0 ||
-            expected_commitment == BytesN::from_array(&env, &[0u8; 32]) ||
-            Self::is_paused(env.clone()) {
+        if expected_revision == 0
+            || expected_commitment == BytesN::from_array(&env, &[0u8; 32])
+            || Self::is_paused(env.clone())
+        {
             return false;
         }
         matches!(
