@@ -297,8 +297,9 @@ impl CorridorRegistry {
     /// Strict public read: checks enabled state, exact digest and ledger
     /// expiration. No private data, liquidity or settlement is implied.
     pub fn is_enabled_with_digest(env: Env, corridor: String, expected_digest: BytesN<32>) -> bool {
-        if expected_digest == BytesN::from_array(&env, &[0u8; 32]) ||
-            !Self::is_enabled(env.clone(), corridor.clone()) {
+        if expected_digest == BytesN::from_array(&env, &[0u8; 32])
+            || !Self::is_enabled(env.clone(), corridor.clone())
+        {
             return false;
         }
         matches!(
