@@ -563,4 +563,42 @@ mod tests {
             assert_eq!(client.admin(), admin);
         }
     }
+    #[test]
+    fn zero_commitment_cannot_activate_policy_but_cannot_block_emergency_revocation(){
+        let env=Env::default();
+        env.mock_all_auths();
+        let admin=Address::generate(&env);
+        let address=env.register(PolicyRegistry,(admin,));
+        let client=PolicyRegistryClient::new(&env,&address);
+        let id=String::from_str(&env,"risk_policy_public");
+        let zero=BytesN::from_array(&env,&[0u8;32]);
+        let approved=BytesN::from_array(&env,&[8u8;32]);
+        assert_eq!(
+            client.try_set_rule(&id,&PolicyRecord{
+                revision:1,enabled:true,public_commitment:zero.clone()
+            }),
+            Err(Ok(PolicyError::InvalidCommitment))
+        );
+        assert_eq!(client.get_rule(&id),None);
+        client.set_rule(&id,&PolicyRecord{
+            revision:1,enabled:true,public_commitment:approved.clone()
+        });
+        assert!(client.is_effective_commitment(&id,&1,&approved));
+        assert!(!client.is_effective_commitment(&id,&1,&zero));
+        assert_eq!(
+            client.try_set_rule(&id,&PolicyRecord{
+                revision:2,enabled:true,public_commitment:zero.clone()
+            }),
+            Err(Ok(PolicyError::InvalidCommitment))
+        );
+        assert!(client.is_effective_commitment(&id,&1,&approved));
+        client.set_paused(&true);
+        client.set_rule(&id,&PolicyRecord{
+            revision:2,enabled:false,public_commitment:zero.clone()
+        });
+        client.set_paused(&false);
+        assert!(!client.is_effective(&id));
+        assert!(!client.is_effective_commitment(&id,&2,&zero));
+    }
+
 }
