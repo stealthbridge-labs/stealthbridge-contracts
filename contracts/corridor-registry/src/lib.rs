@@ -54,6 +54,7 @@ pub enum RegistryError {
     NoPendingUpgrade = 10,
     UpgradeNotReady = 11,
     UpgradeExpired = 12,
+    InvalidConfigDigest = 13,
 }
 
 #[contract]
