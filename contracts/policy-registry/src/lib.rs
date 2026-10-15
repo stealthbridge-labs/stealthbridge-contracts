@@ -118,6 +118,12 @@ impl PolicyRegistry {
         if record.revision == 0 {
             return Err(PolicyError::InvalidRevision);
         }
+        // An all-zero digest is a missing public policy commitment. It must
+        // never be used to enable a policy; disabling with zero is allowed
+        // for emergency revocation without requiring a new config digest.
+        if record.enabled && record.public_commitment == BytesN::from_array(&env, &[0u8; 32]) {
+            return Err(PolicyError::InvalidCommitment);
+        }
         // A pause permits revocation, never staging an enabled policy.
         if record.enabled && Self::is_paused(env.clone()) {
             return Err(PolicyError::Paused);
@@ -152,7 +158,9 @@ impl PolicyRegistry {
         expected_revision: u32,
         expected_commitment: BytesN<32>,
     ) -> bool {
-        if expected_revision == 0 || Self::is_paused(env.clone()) {
+        if expected_revision == 0 ||
+            expected_commitment == BytesN::from_array(&env, &[0u8; 32]) ||
+            Self::is_paused(env.clone()) {
             return false;
         }
         matches!(
