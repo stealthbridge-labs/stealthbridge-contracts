@@ -32,6 +32,7 @@ pub enum PolicyError {
     InvalidRuleId = 4,
     NoPendingAdmin = 5,
     Paused = 6,
+    InvalidCommitment = 7,
 }
 #[contract]
 pub struct PolicyRegistry;
