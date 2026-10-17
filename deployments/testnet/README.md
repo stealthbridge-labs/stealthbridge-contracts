@@ -14,8 +14,9 @@ consumers. No live payments or platform-fee collection are enabled.
 Validate the newer, observed three-contract record against pinned WASM/ABI:
 
 ```sh
-python3 scripts/artifacts.py
-python3 scripts/validate_governance_observation.py
+# Obtain the pinned 130c577e CI archive rather than rebuilding a later HEAD.
+python3 scripts/verify_artifacts.py --artifacts PATH_TO_PINNED_ARTIFACTS
+python3 scripts/validate_governance_observation.py --artifacts PATH_TO_PINNED_ARTIFACTS
 ```
 
 This validator proves static source/hash/schema compatibility, **not** live
