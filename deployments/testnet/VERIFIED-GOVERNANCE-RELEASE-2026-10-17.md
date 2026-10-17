@@ -23,7 +23,7 @@ asset, fiat payout, or platform-fee collection release.
 
 Actual WASM upload receipts: CorridorRegistry [`438313…5d48`](https://stellar.expert/explorer/testnet/tx/43831300c653b110b83a8d5074c33337bb98819ef83d889e727eab7b96965d48); PolicyRegistry [`b6b447…e428`](https://stellar.expert/explorer/testnet/tx/b6b447f587be6d4e0446f5666165cb8b947be415522e76bc61d32626f0c9e428); GovernanceGate [`93d062…7802`](https://stellar.expert/explorer/testnet/tx/93d0625fa98862a76ae9156400eb0eba16a9d57a8a079301b94acb6f0da37802).
 
-All six deployment/upload receipts plus the earlier CorridorRegistry upload were independently fetched as **successful** Stellar Testnet transactions through public Horizon. This is a public transaction-state check, not an independent security audit.
+All six public Testnet upload/deployment transactions (including the earlier CorridorRegistry WASM upload) were confirmed **successful** through Horizon. This is a public transaction-state check, not an independent security audit.
 
 ## What was read back from Testnet
 
@@ -59,12 +59,15 @@ later independently reviewed fee-collecting contract.
 ## Developer verification
 
 ```sh
-python3 scripts/artifacts.py
-python3 scripts/verify_artifacts.py
-python3 scripts/validate_governance_observation.py
-# Run only as a read of the public Testnet deployment:
-python3 scripts/verify_onchain_wasm.py --contracts-file YOUR_THREE_CONTRACT_IDS.json
+# Extract the pinned artifact archive from successful CI run 39030590122,
+# source commit 130c577e, into a directory on your own computer.
+python3 scripts/verify_artifacts.py --artifacts PATH_TO_PINNED_ARTIFACTS
+python3 scripts/validate_governance_observation.py --artifacts PATH_TO_PINNED_ARTIFACTS
+# Read-only: use actual contract IDs and the exact same release artifacts.
+python3 scripts/verify_onchain_wasm.py --contracts-file YOUR_THREE_CONTRACT_IDS.json --artifacts PATH_TO_PINNED_ARTIFACTS
 ```
+
+The offline validator intentionally requires the **original 130c577e release artifacts**. Building current HEAD after documentation-only commits produces new source provenance and is not a substitute for the reviewed deployment release.
 
 Use a local JSON object mapping keys `corridor-registry`, `policy-registry`,
 and `governance-gate` to the real contract IDs above for the last command.
