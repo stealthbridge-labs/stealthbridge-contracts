@@ -313,6 +313,18 @@ fn strict_config_batch_binds_both_digests_revision_expiry_and_pause() {
     let mut one = Vec::new(&env);
     one.push_back(correct.clone());
     assert!(gate.all_configurations_current(&one));
+    assert!(gate.all_distinct_configs_current(&one));
+    let mut dup = Vec::new(&env);
+    dup.push_back(correct.clone());
+    dup.push_back(correct.clone());
+    // Both individual governance checks pass, but duplicate business routes
+    // cannot silently inflate an all-distinct metadata bundle.
+    assert!(gate.all_configurations_current(&dup));
+    assert!(!gate.all_distinct_configs_current(&dup));
+    assert_eq!(
+        gate.try_all_distinct_configs_current(&Vec::<GovernanceConfigCheck>::new(&env)),
+        Err(Ok(GateError::InvalidBatchSize))
+    );
     assert_eq!(
         gate.try_all_configurations_current(&Vec::<GovernanceConfigCheck>::new(&env)),
         Err(Ok(GateError::InvalidBatchSize))
@@ -334,6 +346,7 @@ fn strict_config_batch_binds_both_digests_revision_expiry_and_pause() {
     );
     env.ledger().with_mut(|ledger| ledger.sequence_number = 111);
     assert!(!gate.all_configurations_current(&one));
+    assert!(!gate.all_distinct_configs_current(&one));
     assert!(!gate.public_flags_allow_config(&id, &config_hash, &policy, &1, &policy_hash));
     corridors.approve_config(&id, &config_hash, &150);
     assert!(gate.all_configurations_current(&one));

@@ -214,6 +214,35 @@ impl GovernanceGate {
         }
         Ok(true)
     }
+    /// Business policy bundle: reject repeated corridor IDs, even when
+    /// their bound policies differ. Check every remaining pair atomically
+    /// against live registry commitments. This checks GOVERNANCE ONLY.
+    pub fn all_distinct_configs_current(
+        env: Env,
+        checks: Vec<GovernanceConfigCheck>,
+    ) -> Result<bool, GateError> {
+        if checks.is_empty() || checks.len() > 8 {
+            return Err(GateError::InvalidBatchSize);
+        }
+        let mut seen = Vec::<String>::new(&env);
+        for check in checks.iter() {
+            if seen.contains(&check.corridor) {
+                return Ok(false);
+            }
+            seen.push_back(check.corridor.clone());
+            if !Self::public_flags_allow_config(
+                env.clone(),
+                check.corridor,
+                check.expected_config_digest,
+                check.policy,
+                check.expected_revision,
+                check.expected_policy_commitment,
+            ) {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
     /// An exact public policy version/commitment is required in addition
     /// to the corridor flag. This rejects stale/substituted policy bindings.
     /// True is public governance agreement, NEVER settlement authorization.
