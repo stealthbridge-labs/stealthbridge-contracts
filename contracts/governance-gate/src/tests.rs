@@ -255,3 +255,75 @@ fn recorded_governance_decision_is_not_reusable_after_policy_revision() {
     assert_eq!(paused.get(0), Some(false));
     assert_eq!(paused.get(1), Some(false));
 }
+
+#[test]
+fn strict_config_batch_binds_both_digests_revision_expiry_and_pause() {
+    use soroban_sdk::testutils::Ledger as _;
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|ledger| ledger.sequence_number = 100);
+    let admin = Address::generate(&env);
+    let corridors_address = env.register(CorridorRegistry, (admin.clone(),));
+    let policies_address = env.register(PolicyRegistry, (admin.clone(),));
+    let gate_address = env.register(
+        GovernanceGate,
+        (admin, corridors_address.clone(), policies_address.clone()),
+    );
+    let corridors = CorridorRegistryClient::new(&env, &corridors_address);
+    let policies = PolicyRegistryClient::new(&env, &policies_address);
+    let gate = GovernanceGateClient::new(&env, &gate_address);
+    let id = String::from_str(&env, "read_only_corridor");
+    let policy = String::from_str(&env, "read_only_policy");
+    let config_hash = BytesN::from_array(&env, &[17; 32]);
+    let other_hash = BytesN::from_array(&env, &[18; 32]);
+    let policy_hash = BytesN::from_array(&env, &[21; 32]);
+    corridors.set_enabled(&id, &true);
+    policies.set_rule(
+        &policy,
+        &PolicyRecord {
+            revision: 1,
+            enabled: true,
+            public_commitment: policy_hash.clone(),
+        },
+    );
+    let correct = GovernanceConfigCheck {
+        corridor: id.clone(),
+        expected_config_digest: config_hash.clone(),
+        policy: policy.clone(),
+        expected_revision: 1,
+        expected_policy_commitment: policy_hash.clone(),
+    };
+    assert!(!gate.public_flags_allow_config(&id, &config_hash, &policy, &1, &policy_hash));
+    corridors.approve_config(&id, &config_hash, &110);
+    assert!(gate.public_flags_allow_config(&id, &config_hash, &policy, &1, &policy_hash));
+    assert!(!gate.public_flags_allow_config(&id, &other_hash, &policy, &1, &policy_hash));
+    assert!(!gate.public_flags_allow_config(&id, &config_hash, &policy, &2, &policy_hash));
+    let wrong = GovernanceConfigCheck {
+        expected_config_digest: other_hash,
+        ..correct.clone()
+    };
+    let mut checks = Vec::new(&env);
+    checks.push_back(correct.clone());
+    checks.push_back(wrong);
+    assert_eq!(gate.check_config_batch(&checks).get(0), Some(true));
+    assert_eq!(gate.check_config_batch(&checks).get(1), Some(false));
+    assert_eq!(
+        gate.try_check_config_batch(&Vec::<GovernanceConfigCheck>::new(&env)),
+        Err(Ok(GateError::InvalidBatchSize))
+    );
+    for _ in 2..9 {
+        checks.push_back(correct.clone());
+    }
+    assert_eq!(
+        gate.try_check_config_batch(&checks),
+        Err(Ok(GateError::InvalidBatchSize))
+    );
+    env.ledger().with_mut(|ledger| ledger.sequence_number = 111);
+    assert!(!gate.public_flags_allow_config(&id, &config_hash, &policy, &1, &policy_hash));
+    corridors.approve_config(&id, &config_hash, &150);
+    policies.set_paused(&true);
+    assert!(!gate.public_flags_allow_config(&id, &config_hash, &policy, &1, &policy_hash));
+    policies.set_paused(&false);
+    corridors.set_enabled(&id, &false);
+    assert!(!gate.public_flags_allow_config(&id, &config_hash, &policy, &1, &policy_hash));
+}

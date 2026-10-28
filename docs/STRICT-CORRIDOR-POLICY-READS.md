@@ -1,0 +1,7 @@
+# Source-only strict corridor + policy gate
+
+`GovernanceGate.public_flags_allow_config` and `check_config_batch` are new **read-only Soroban source code**, not methods on the historically deployed October 17, 2026 GovernanceGate. Existing deployed contracts must not be treated as exposing this interface without a separately reviewed deployment and on-chain ABI/bytecode evidence. The operator must not blindly upgrade/redeploy to enable payments.
+
+The strict check combines an exact, nonzero corridor configuration SHA-256 digest (`CorridorRegistry.is_enabled_with_digest`) with an exact policy revision and nonzero public commitment (`PolicyRegistry.is_effective_commitment`). It fails closed when a dependency is missing, a registry is paused, a digest is stale/wrong, a config approval expires, the policy revision changes or the supplied identifiers are invalid. The bounded batch accepts 1–8 ordered items; malformed sizes reject explicitly. These reads are public governance metadata only and do not validate issuer custody, transfer privacy, settlement authorizations, external FX, off-ramp payouts or reserve positions.
+
+The feature deliberately does **not** extend existing deployed code or a canonical release manifest. Any later release must separately reproduce the Soroban WASM, verify contract IDs and ABI, conduct wallet-signing acceptance, and pass independent privacy and compliance release gates. Keep execution and fees disabled throughout Testnet verification.

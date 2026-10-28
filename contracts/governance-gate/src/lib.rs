@@ -25,6 +25,18 @@ pub struct GovernanceCheck {
     pub expected_commitment: BytesN<32>,
 }
 
+/// Both config and policy commitments are required for strict public checks.
+/// Source-only ABI extension: existing Testnet deployments do not expose it.
+#[contracttype]
+#[derive(Clone)]
+pub struct GovernanceConfigCheck {
+    pub corridor: String,
+    pub expected_config_digest: BytesN<32>,
+    pub policy: String,
+    pub expected_revision: u32,
+    pub expected_policy_commitment: BytesN<32>,
+}
+
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
@@ -95,6 +107,85 @@ impl GovernanceGate {
                 check.policy,
                 check.expected_revision,
                 check.expected_commitment,
+            ));
+        }
+        Ok(verdicts)
+    }
+    /// Strict metadata-only cross-registry check. Neither a bare enabled flag
+    /// nor a stale/wrong corridor config or policy commitment is sufficient.
+    /// No issuer, proof, settlement, transfer or authorization is checked.
+    pub fn public_flags_allow_config(
+        env: Env,
+        corridor: String,
+        expected_config_digest: BytesN<32>,
+        policy: String,
+        expected_revision: u32,
+        expected_policy_commitment: BytesN<32>,
+    ) -> bool {
+        if corridor.is_empty()
+            || corridor.len() > 128
+            || policy.is_empty()
+            || policy.len() > 128
+            || expected_revision == 0
+            || expected_config_digest == BytesN::from_array(&env, &[0; 32])
+            || expected_policy_commitment == BytesN::from_array(&env, &[0; 32])
+        {
+            return false;
+        }
+        let Some(corridor_registry) = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&Key::CorridorRegistry)
+        else {
+            return false;
+        };
+        let Some(policy_registry) = env
+            .storage()
+            .instance()
+            .get::<_, Address>(&Key::PolicyRegistry)
+        else {
+            return false;
+        };
+        let cargs: Vec<Val> = (corridor, expected_config_digest).into_val(&env);
+        let good_corridor = matches!(
+            env.try_invoke_contract::<bool, soroban_sdk::Error>(
+                &corridor_registry,
+                &Symbol::new(&env, "is_enabled_with_digest"),
+                cargs
+            ),
+            Ok(Ok(true))
+        );
+        if !good_corridor {
+            return false;
+        }
+        let pargs: Vec<Val> =
+            (policy, expected_revision, expected_policy_commitment).into_val(&env);
+        matches!(
+            env.try_invoke_contract::<bool, soroban_sdk::Error>(
+                &policy_registry,
+                &Symbol::new(&env, "is_effective_commitment"),
+                pargs
+            ),
+            Ok(Ok(true))
+        )
+    }
+    /// Bounded strict config+policy checks at one ledger, preserving input order.
+    pub fn check_config_batch(
+        env: Env,
+        checks: Vec<GovernanceConfigCheck>,
+    ) -> Result<Vec<bool>, GateError> {
+        if checks.is_empty() || checks.len() > 8 {
+            return Err(GateError::InvalidBatchSize);
+        }
+        let mut verdicts = Vec::new(&env);
+        for check in checks.iter() {
+            verdicts.push_back(Self::public_flags_allow_config(
+                env.clone(),
+                check.corridor,
+                check.expected_config_digest,
+                check.policy,
+                check.expected_revision,
+                check.expected_policy_commitment,
             ));
         }
         Ok(verdicts)
