@@ -307,6 +307,16 @@ fn strict_config_batch_binds_both_digests_revision_expiry_and_pause() {
     checks.push_back(wrong);
     assert_eq!(gate.check_config_batch(&checks).get(0), Some(true));
     assert_eq!(gate.check_config_batch(&checks).get(1), Some(false));
+    // A business bundle is current only if every exact source-level binding
+    // is current. These are metadata observations, not payment authorization.
+    assert!(!gate.all_configurations_current(&checks));
+    let mut one = Vec::new(&env);
+    one.push_back(correct.clone());
+    assert!(gate.all_configurations_current(&one));
+    assert_eq!(
+        gate.try_all_configurations_current(&Vec::<GovernanceConfigCheck>::new(&env)),
+        Err(Ok(GateError::InvalidBatchSize))
+    );
     assert_eq!(
         gate.try_check_config_batch(&Vec::<GovernanceConfigCheck>::new(&env)),
         Err(Ok(GateError::InvalidBatchSize))
@@ -315,14 +325,21 @@ fn strict_config_batch_binds_both_digests_revision_expiry_and_pause() {
         checks.push_back(correct.clone());
     }
     assert_eq!(
+        gate.try_all_configurations_current(&checks),
+        Err(Ok(GateError::InvalidBatchSize))
+    );
+    assert_eq!(
         gate.try_check_config_batch(&checks),
         Err(Ok(GateError::InvalidBatchSize))
     );
     env.ledger().with_mut(|ledger| ledger.sequence_number = 111);
+    assert!(!gate.all_configurations_current(&one));
     assert!(!gate.public_flags_allow_config(&id, &config_hash, &policy, &1, &policy_hash));
     corridors.approve_config(&id, &config_hash, &150);
+    assert!(gate.all_configurations_current(&one));
     policies.set_paused(&true);
     assert!(!gate.public_flags_allow_config(&id, &config_hash, &policy, &1, &policy_hash));
+    assert!(!gate.all_configurations_current(&one));
     policies.set_paused(&false);
     corridors.set_enabled(&id, &false);
     assert!(!gate.public_flags_allow_config(&id, &config_hash, &policy, &1, &policy_hash));

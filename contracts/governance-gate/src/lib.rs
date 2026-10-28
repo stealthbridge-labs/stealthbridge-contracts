@@ -190,6 +190,30 @@ impl GovernanceGate {
         }
         Ok(verdicts)
     }
+    /// One all-or-nothing, ledger-atomic metadata observation for a business
+    /// batch of <=8 corridor+policy pairs. Short-circuits at first failed
+    /// public check; never approves funds, issuer or a privacy proof.
+    pub fn all_configurations_current(
+        env: Env,
+        checks: Vec<GovernanceConfigCheck>,
+    ) -> Result<bool, GateError> {
+        if checks.is_empty() || checks.len() > 8 {
+            return Err(GateError::InvalidBatchSize);
+        }
+        for check in checks.iter() {
+            if !Self::public_flags_allow_config(
+                env.clone(),
+                check.corridor,
+                check.expected_config_digest,
+                check.policy,
+                check.expected_revision,
+                check.expected_policy_commitment,
+            ) {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
     /// An exact public policy version/commitment is required in addition
     /// to the corridor flag. This rejects stale/substituted policy bindings.
     /// True is public governance agreement, NEVER settlement authorization.
