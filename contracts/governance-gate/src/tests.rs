@@ -314,6 +314,35 @@ fn strict_config_batch_binds_both_digests_revision_expiry_and_pause() {
     one.push_back(correct.clone());
     assert!(gate.all_configurations_current(&one));
     assert!(gate.all_distinct_configs_current(&one));
+    // Eight different operator corridors may share the same current policy.
+    // Metadata lookups remain bounded and strictly distinct.
+    let mut eight = Vec::new(&env);
+    eight.push_back(correct.clone());
+    for suffix in ["a", "b", "c", "d", "e", "f", "g"] {
+        let other = String::from_str(&env, suffix);
+        corridors.set_enabled(&other, &true);
+        corridors.approve_config(&other, &config_hash, &110);
+        eight.push_back(GovernanceConfigCheck {
+            corridor: other,
+            expected_config_digest: config_hash.clone(),
+            policy: policy.clone(),
+            expected_revision: 1,
+            expected_policy_commitment: policy_hash.clone(),
+        });
+    }
+    assert!(gate.all_distinct_configs_current(&eight));
+    let mut nine = eight.clone();
+    nine.push_back(correct.clone());
+    assert_eq!(
+        gate.try_all_distinct_configs_current(&nine),
+        Err(Ok(GateError::InvalidBatchSize))
+    );
+    let mut stale = eight.clone();
+    let mut first = stale.get(0).unwrap();
+    first.expected_policy_commitment = BytesN::from_array(&env, &[99; 32]);
+    stale.set(0, first);
+    assert!(!gate.all_distinct_configs_current(&stale));
+
     let mut dup = Vec::new(&env);
     dup.push_back(correct.clone());
     dup.push_back(correct.clone());
