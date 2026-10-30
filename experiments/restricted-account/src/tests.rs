@@ -90,14 +90,20 @@ fn bad_signature_and_changed_payload_reject() {
     let contexts = vec![&env, allowed_call(&env, &allowed_contract, "authorize")];
     assert!(env
         .try_invoke_contract_check_auth::<AuthError>(
-            &account, &payload, attacker_signature.into_val(&env), &contexts
+            &account,
+            &payload,
+            attacker_signature.into_val(&env),
+            &contexts
         )
         .is_err());
     let other_payload = BytesN::<32>::from_array(&env, &[6; 32]);
     let (_, original_signature) = signed_payload(&env, &owner);
     assert!(env
         .try_invoke_contract_check_auth::<AuthError>(
-            &account, &other_payload, original_signature.into_val(&env), &contexts
+            &account,
+            &other_payload,
+            original_signature.into_val(&env),
+            &contexts
         )
         .is_err());
 }
@@ -117,12 +123,46 @@ fn signed_zero_arg_authorize_must_reject_argument_smuggling() {
         fn_name: Symbol::new(&env, "authorize"),
         args: vec![&env, 7u32.into_val(&env)],
     });
-    assert!(env.try_invoke_contract_check_auth::<AuthError>(
-        &account,
-        &payload,
-        signature.into_val(&env),
-        &vec![&env, with_arguments],
-    ).is_err());
+    assert!(env
+        .try_invoke_contract_check_auth::<AuthError>(
+            &account,
+            &payload,
+            signature.into_val(&env),
+            &vec![&env, with_arguments],
+        )
+        .is_err());
     // Public discovery of this C-address does not establish ownership or
     // turn this source-only research contract into an executable payment rail.
+}
+
+#[test]
+fn same_authorization_payload_never_crosses_independent_owner_keys() {
+    let env = Env::default();
+    let alice = SigningKey::from_bytes(&[21; 32]);
+    let bob = SigningKey::from_bytes(&[22; 32]);
+    let allowed_contract = Address::generate(&env);
+    let alice_account = test_account(&env, &alice, &allowed_contract);
+    let bob_account = test_account(&env, &bob, &allowed_contract);
+    let (payload, alice_signature) = signed_payload(&env, &alice);
+    let context = vec![&env, allowed_call(&env, &allowed_contract, "authorize")];
+    assert_eq!(
+        env.try_invoke_contract_check_auth::<AuthError>(
+            &alice_account,
+            &payload,
+            alice_signature.clone().into_val(&env),
+            &context
+        ),
+        Ok(())
+    );
+    assert!(env
+        .try_invoke_contract_check_auth::<AuthError>(
+            &bob_account,
+            &payload,
+            alice_signature.into_val(&env),
+            &context
+        )
+        .is_err());
+    // A cryptographically valid Ed25519 message is NOT bound to a passkey RP ID,
+    // spending limit, recovery policy, transaction nonce or Stellar network.
+    // This is research only and cannot serve as a product wallet.
 }

@@ -3,8 +3,8 @@
 //! Permits only one preselected public contract authorize() operation.
 //! No financial, deployment, passkey, or recovery interface is provided.
 use soroban_sdk::{
-    auth::Context, contract, contracterror, contractimpl, contracttype, symbol_short,
-    Address, BytesN, Env, Vec,
+    auth::Context, contract, contracterror, contractimpl, contracttype, symbol_short, Address,
+    BytesN, Env, Vec,
 };
 
 #[contracttype]
@@ -29,7 +29,9 @@ pub struct RestrictedAccount;
 impl RestrictedAccount {
     pub fn __constructor(env: Env, owner_public_key: BytesN<32>, allowed_contract: Address) {
         env.storage().instance().set(&Key::Owner, &owner_public_key);
-        env.storage().instance().set(&Key::AllowedContract, &allowed_contract);
+        env.storage()
+            .instance()
+            .set(&Key::AllowedContract, &allowed_contract);
     }
 
     pub fn owner_key(env: Env) -> Option<BytesN<32>> {
