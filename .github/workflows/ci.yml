@@ -75,3 +75,25 @@ jobs:
             docs/UPGRADABLE-SOROBAN-OPERATIONS.md
           if-no-files-found: error
           retention-days: 14
+
+  smart-account-release-preflight:
+    name: Pinned smart-account artifacts (offline, no deployment)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/smart-account-preflight/package-lock.json
+      - name: Install exact published dependency versions without package scripts
+        working-directory: tools/smart-account-preflight
+        run: npm ci --ignore-scripts
+      - name: Reject unsafe artifacts, false authorization and signing paths
+        working-directory: tools/smart-account-preflight
+        run: npm test
+      # Live RPC verification stays a separate, operator-invoked, read-only
+      # preflight. It must never auto-deploy or silently extend TTL.
