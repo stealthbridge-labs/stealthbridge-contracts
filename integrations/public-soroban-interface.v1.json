@@ -122,6 +122,34 @@
             "Vec<GovernanceCheck>"
           ],
           "returns": "Result<Vec<bool>,GateError>"
+        },
+        "public_flags_allow_config": {
+          "args": [
+            "String",
+            "BytesN<32>",
+            "String",
+            "u32",
+            "BytesN<32>"
+          ],
+          "returns": "bool"
+        },
+        "check_config_batch": {
+          "args": [
+            "Vec<GovernanceConfigCheck>"
+          ],
+          "returns": "Result<Vec<bool>,GateError>"
+        },
+        "all_configurations_current": {
+          "args": [
+            "Vec<GovernanceConfigCheck>"
+          ],
+          "returns": "Result<bool,GateError>"
+        },
+        "all_distinct_configs_current": {
+          "args": [
+            "Vec<GovernanceConfigCheck>"
+          ],
+          "returns": "Result<bool,GateError>"
         }
       },
       "writes": []

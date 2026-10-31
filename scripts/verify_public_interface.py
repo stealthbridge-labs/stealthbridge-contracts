@@ -29,8 +29,8 @@ for name,contract in metadata["contracts"].items():
         sorted(methods-declared), sorted(expected_undisclosed))
     assert set(contract["reads"]).isdisjoint(set(contract["writes"])),name
     for method,info in contract["reads"].items():
-        assert isinstance(info["args"],list) and len(info["args"]) <= {"corridor-registry":2,"policy-registry":3,"governance-gate":4}[name],name
-        assert info["returns"] in {"Address","Option<Address>","bool","Option<PolicyRecord>","Result<Vec<bool>,GateError>"},method
+        assert isinstance(info["args"],list) and len(info["args"]) <= {"corridor-registry":2,"policy-registry":3,"governance-gate":5}[name],name
+        assert info["returns"] in {"Address","Option<Address>","bool","Option<PolicyRecord>","Result<Vec<bool>,GateError>","Result<bool,GateError>"},method
         start=re.search(r"pub fn "+method+r"\s*\(",source)
         assert start is not None,method
         definition=source[start.start():start.start()+320]
@@ -40,9 +40,18 @@ for name,contract in metadata["contracts"].items():
             ("policy-registry","is_effective_commitment"):["String","u32","BytesN<32>"],
             ("governance-gate","public_flags_allow_commitment"):["String","String","u32","BytesN<32>"],
             ("governance-gate","check_commitment_batch"):["Vec<GovernanceCheck>"],
+            ("governance-gate","public_flags_allow_config"):
+               ["String","BytesN<32>","String","u32","BytesN<32>"],
+            ("governance-gate","check_config_batch"):["Vec<GovernanceConfigCheck>"],
+            ("governance-gate","all_configurations_current"):["Vec<GovernanceConfigCheck>"],
+            ("governance-gate","all_distinct_configs_current"):["Vec<GovernanceConfigCheck>"],
         }
         if (name,method) in required:
-            assert info["args"]==required[(name,method)] and info["returns"]==("Result<Vec<bool>,GateError>" if method=="check_commitment_batch" else "bool")
+            expected_return=(
+               "Result<Vec<bool>,GateError>" if method in ("check_commitment_batch","check_config_batch")
+               else "Result<bool,GateError>" if method in ("all_configurations_current","all_distinct_configs_current")
+               else "bool")
+            assert info["args"]==required[(name,method)] and info["returns"]==expected_return
         for arg in info["args"]:
             assert arg in definition,(name,method,arg)
 print("Soroban public method inventory matches all source contracts; no deployment asserted.")
