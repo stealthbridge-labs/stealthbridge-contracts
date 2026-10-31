@@ -1,170 +1,118 @@
-<div align="center"><img src="assets/stealthbridge-logo.svg" width="760" alt="StealthBridge — Confidential payments. Without borders." /></div>
+<div align="center"><img src="assets/stealthbridge-logo.svg" alt="StealthBridge — Confidential payments. Without borders." width="760" /></div>
 
-# StealthBridge Protocol & Smart Contracts
+# StealthBridge — Soroban Protocol & Smart Accounts
 
-## How deployed contracts connect to StealthBridge
+**Rust/Soroban governance and independently verified building blocks for a future privacy-conscious cross-border payment system.**
 
-**Observed on Stellar Testnet (17 October 2026):** `CorridorRegistry`, `PolicyRegistry` and `GovernanceGate` are actual Soroban/Rust→WASM deployed governance instances. Exact on-chain IDs, receipts and hashes: [verified governance release](deployments/testnet/VERIFIED-GOVERNANCE-RELEASE-2026-10-17.md) · [machine-readable deployment observation](deployments/testnet/governance-deployment-evidence.v2.json). They manage **public governance state** and cross-registry decisions, not funds.
+[Product](https://stealthbridge.vercel.app) · [Protocol architecture](docs/ARCHITECTURE-AND-DELIVERY.md) · [Privacy release gates](docs/PRIVACY-RELEASE-GATES.md) · [Roadmap](ROADMAP.md)
 
-```text
-Next.js product / preview --GET /api/bridge/*--> Rust Axum backend
-          |                                    |-- Stellar Testnet RPC
-          |                                    |     |-- CorridorRegistry
-          |                                    |     |-- PolicyRegistry
-          |                                    |     '-- GovernanceGate
-          |                                    '-- Neon PostgreSQL (journal/catalog)
-          '-- read-only browser wallet context
-TypeScript SDK -------- typed, validated API data --------^
-```
+## Deployed versus implemented
 
-The backend's `/v1/governance/release`, `/v1/governance/code` and `/v1/governance/admin` reads underpin the frontend's gated `/preview/governance` experience. The frontend does **not** submit Soroban invocations or move assets. A fresh executable/admin observation is separate from cryptographic authorization or privacy proofs. See the [cross-repository topology](https://github.com/stealthbridge-labs/.github/blob/main/docs/INTEGRATION-TOPOLOGY.md) and [attestation handoff](docs/GOVERNANCE-ATTESTATION-HANDOFF.md). Canonical `manifest.json` v1 remains an outdated `not-deployed` record until reviewed v2 promotion. **Platform fees, fund transfers, confidential rails and fiat payouts are not operational.**
+Three **public governance contracts** were independently verified on **Stellar Testnet on October 17, 2026**:
 
-The fee-vault research changes are documented in [role and key recovery review](docs/FEE-VAULT-SECURITY-AND-RECOVERY-30-32.md); cryptographic privacy must be independently established under [reproduction gates](docs/INDEPENDENT-PRIVACY-REPRODUCTION-29-31.md). Neither path is release approval.
+| Governance contract | Responsibility |
+| --- | --- |
+| `CorridorRegistry` | Operator-controlled public corridor configuration, revocation and pause |
+| `PolicyRegistry` | Revisioned public policy commitments and effective-state checks |
+| `GovernanceGate` | Fail-closed, bounded cross-registry governance reads |
 
-**Engineering roadmap:** [View the repository-specific plan](ROADMAP.md).
+Their exact contract addresses, transaction receipts, hash evidence and administrator at deployment are in the [reviewed Testnet deployment record](deployments/testnet/VERIFIED-GOVERNANCE-RELEASE-2026-10-17.md) and [machine-readable evidence](deployments/testnet/governance-deployment-evidence.v2.json). Addresses and signing identities **belong in restricted operator/release documentation, not customer-facing product pages**.
 
-## October 17 — verified on-chain Testnet governance deployment
+**Critical version distinction:** the source workspace has since added public, digest-bound and batch governance methods. A source-level Rust test or rebuilt WASM is **not evidence those newer methods were deployed** to the historical instances. The legacy canonical `deployments/testnet/manifest.json` still records an older `not-deployed` integration format: it is **outdated as an integration manifest, not an assertion about the three observed governance instances**. Do not use it to authorize contract operations.
 
-**All three Soroban governance contracts are deployed and their on-chain WASM
-verified against pinned CI artifacts.** The deployed administrator is the
-`operator_local` Stellar CLI account (`GC3Y…NX5TN`), **not** the separate
-`GBBC…DLTE` Freighter account. Their exact C-addresses, public transaction
-hashes, constructor bindings and code hashes are recorded in the
-[verified governance release report](deployments/testnet/VERIFIED-GOVERNANCE-RELEASE-2026-10-17.md)
-and [machine-readable evidence](deployments/testnet/governance-deployment-evidence.v2.json).
+**The contracts do not custody funds, prove transaction confidentiality, execute transfers, collect platform fees, or provide bank payouts.**
 
-The **legacy canonical manifest v1** still reads `not-deployed` because
-its validator cannot represent all three contracts. This now describes an
-outdated integration record, **not the live chain**; a reviewed manifest v2
-migration is needed before backend/SDK/frontend can consume these addresses
-as trusted live contracts. No private payments, platform fee collection,
-custody, or fiat payout have been enabled.
-
-## Rust-first Soroban engineering
-
-**All on-chain StealthBridge smart contracts are written in Rust and compiled to WASM.**
-The Python scripts under `scripts/` are off-chain maintainers' build, provenance,
-deployment-preflight, and test utilities—not a Python payment protocol.
-Counting their individual test files can make GitHub's language breakdown
-look Python-heavy even though Soroban validators execute compiled Rust WASM.
-
-The [Rust-first architecture and Python-tooling plan](docs/RUST-FIRST-SOROBAN.md)
-explains the exact boundaries and how we are progressively moving source
-audits and selected release tooling to native Rust without losing digest
-verification. CI now compiles and exercises `tools/source-audit.rs` with
-`rustc` alongside all three Soroban crates.
-
-**New actual on-chain Rust methods:** `CorridorRegistry::approve_config` and `is_enabled_with_digest` bind an already-enabled corridor to a revocable public digest and bounded ledger expiry; `PolicyRegistry::is_effective_commitment`
-binds an approved revision and `BytesN<32>` public commitment;
-`GovernanceGate::public_flags_allow_commitment` checks the bound policy
-and corridor through Soroban cross-contract invocations; and
-`GovernanceGate::check_commitment_batch` processes at most eight
-ordered public governance decisions with an explicit oversize error.
-These do **not** prove privacy, transfer funds, or authorize fiat payout.
-## Soroban architecture: three contracts and the route to Testnet
-
-**Full engineering guide:** [Soroban architecture, source-to-WASM provenance, wallet signing boundaries, and delivery milestones](docs/ARCHITECTURE-AND-DELIVERY.md).
+## What the source repository contains
 
 ```text
-CorridorRegistry ── public is_enabled(corridor) ─┐
-                                                 ├── GovernanceGate
-PolicyRegistry ── public is_effective(policy) ───┘    │
-                                                      └─ public_flags_allow()
-Three verified Testnet governance deployments → pending backend safe-read adapter
-Future audited private rail and settlement adapter (NOT implemented)
+contracts/
+  corridor-registry/    public route governance and administrator controls
+  policy-registry/      effective commitment/revision and pause controls
+  governance-gate/      cross-contract gate checks; max-eight batch reads
+  settlement-adapter/  placeholder, no deployed or enabled settlement path
+integrations/
+  confidential-tokens/         upstream issuer-privacy research, NO-GO
+  stellar-private-payments/    relationship-privacy verification research
+tools/
+  smart-account-preflight/    read-only pinned Stellar Testnet WASM/policy checks
+deployments/testnet/           governance release receipts and historical evidence
+docs/                          threat models, ADRs, privacy and recovery gates
 ```
 
-**What exists:** three actual Rust/Soroban crates—[corridor registry](contracts/corridor-registry/README.md), [policy registry](contracts/policy-registry/README.md), and [read-only governance gate](contracts/governance-gate/README.md). They have scoped authorization, emergency-pause logic, local cross-contract tests and reproducible WASM/ABI artifact evidence. A combined public governance flag does not authorize token transfer, validate a privacy proof, or confirm settlement eligibility.
+Other `apps/`, `services/` and `packages/` folders include **legacy scaffolding placeholders**. The active user-facing product, server, and SDK are maintained in **separate repositories**. Do not treat a placeholder folder as a production service.
 
-**Current deployment state:** the three actual contract IDs and transactions are published in the [verified Testnet release evidence](deployments/testnet/VERIFIED-GOVERNANCE-RELEASE-2026-10-17.md). The old manifest v1 still says `not-deployed` and requires a reviewed three-contract compatibility migration. No privacy verifier, issuer-backed asset, custody, fee collector, or fiat payout is verified.
+Read the [Rust-first Soroban architecture](docs/RUST-FIRST-SOROBAN.md), [implementation guide](docs/IMPLEMENTATION-GUIDE.md), [public source ABI inventory](integrations/public-soroban-interface.v1.json), and [governance edge tests](docs/BATCH-GOVERNANCE-EDGE-TESTS.md).
 
-**Near-term integration plan:** migrate the canonical manifest to an independently reviewed three-contract format, sync typed ABI hashes across backend and SDK, maintain and harden the existing read-only Testnet RPC verification of the three contract IDs and frontend governance workspace without enabling any payment or privacy rail. Fee charging requires a separate audited asset-transfer contract and transparent user consent.
+## Build and verify the on-chain source
 
-**Privacy roadmap:** evaluate Confidential Tokens for value confidentiality and Stellar Private Payments for relationship privacy as separate systems. Define issuer authority, private proof inputs, nullifier/replay protections, fee/TTL, metadata disclosure, account recovery and regulator access. Implement fund-moving contracts **only** when the chosen primitive, legal model, asset issuer and external settlement arrangements have passed security review.
+The repository pins Rust **1.91.0**, Soroban SDK **27.0.6**, Stellar CLI **27.1.0** and the `wasm32v1-none` target at a protocol-27 baseline. Check current Testnet protocol compatibility before any new deployment; upstream private-asset libraries may require newer toolchains and are **not automatically composable**.
 
-**Verification commands:** `cargo test --workspace --locked`, `cargo clippy --workspace --all-targets --locked -- -D warnings`, `python3 scripts/artifacts.py`, `python3 scripts/verify_artifacts.py`, and `python3 scripts/preflight_testnet.py`. A local WASM match is not evidence that anything has been deployed.
-
-**Confidential payments. Without borders.**
-
-[Frontend](https://github.com/stealthbridge-labs/stealthbridge-frontend) · [Backend](https://github.com/stealthbridge-labs/stealthbridge-backend) · [SDK](https://github.com/stealthbridge-labs/stealthbridge-sdk)
-
-> **Status:** research-stage Stellar **Testnet-only** protocol. Three public governance Soroban contracts are **deployed and their bytecode/admin/dependencies verified on Testnet**. No privacy proofs, platform fee collection, or fund-moving settlement primitives are operational.
-
-## What is here?
-- `contracts/corridor-registry`: authorized and pausable on-chain public corridor governance.
-- `contracts/policy-registry`: revisioned public commitments and strict commitment matching.
-- `contracts/governance-gate`: fail-closed cross-registry and bounded batch reads in Rust.
-- \`docs/PROTOCOL-ARCHITECTURE.md\`: confidentiality vs anonymity, issuer-controlled stablecoins, planned boundaries.
-- \`docs/TESTPLAN.md\`: formal verification milestones, no credentials required.
-- \`deployments/testnet/manifest.json\`: legacy v1 integration manifest, pending reviewed replacement; see [actual three-contract Testnet evidence](deployments/testnet/governance-deployment-evidence.v2.json).
-- \`docs/PRIVACY-MODEL.md\`: initial threat model.
-- \`docs/REFERENCES.md\`: official developer resources.
-
-## Build & test
-The repository pins Rust **1.91.0**, Soroban SDK **27.0.6**, Stellar CLI
-**27.1.0**, and the `wasm32v1-none` target (protocol **27** baseline).
-Install the CLI from its [official release](https://github.com/stellar/stellar-cli/releases/tag/v27.1.0).
-Rustup reads `rust-toolchain.toml` automatically.
-
-```sh
+```bash
+rustup target add wasm32v1-none
 cargo fmt --all -- --check
 cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo build --workspace --locked --target wasm32v1-none --release
-rustc --edition=2021 --test -D warnings tools/source-audit.rs -o /tmp/soroban-audit-tests
-/tmp/soroban-audit-tests
 python3 -m unittest discover -s scripts -p 'test_*.py'
-python3 scripts/artifacts.py
 python3 scripts/verify_artifacts.py
 python3 scripts/validate_manifest.py
-python3 scripts/preflight_testnet.py
-python3 scripts/benchmark.py
 ```
 
-These commands run locally without signer credentials. CI publishes the WASM,
-ABI snapshot, source/tool versions, checksums, and a quantitative resource table.
-The artifact script compares two isolated release builds byte-for-byte.
-[Verification and benchmark details](docs/REGISTRY-VERIFICATION.md) describe
-what is measured and the local test limitations. The legacy canonical manifest remains `not-deployed` despite this now-verified
-governance Testnet release. Build reproducibility alone does not prove deployment;
-the [chain readback evidence](deployments/testnet/VERIFIED-GOVERNANCE-RELEASE-2026-10-17.md)
-separately records successful on-chain transactions, WASM, admin and dependency checks.
-This is not settlement or privacy verification.
+Source tests, deterministic builds and ABI manifests **do not prove deployed Testnet compatibility**. On-chain evidence must be independently refreshed for the exact contract ID, ledger, code hash, storage/TTL and administrator policy. Never sign transactions merely because preflight scripts pass.
 
-The CI pipeline runs the current workspace tests, Clippy, reproducible
-WASM builds of all three contracts, per-contract ABI hashing, artifact-integrity
-verification, manifest checks and an offline deployment preflight. Historic
-macOS test counts and WASM sizes are not a current release baseline; use
-pinned CI artifacts and `artifacts/provenance.json` for measurements. Local
-Soroban-host tests do **not** verify actual signatures, network restoration
-fees, deployed contracts or payment execution.
+## Smart accounts: reviewed read-only preflight
 
-## Architecture
-StealthBridge Business targets **confidential amounts with known parties**; StealthBridge Send targets **shielded relationships**. These require separate privacy primitives with different trust and metadata leakage characteristics. The governance registries and gate remain intentionally independent of both privacy rails until real Testnet composability is proven.
+The Testnet Smart Account Kit/OpenZeppelin pinned-artifact verifier checks live public **account WASM bytes/hash**, **WebAuthn verifier**, **threshold policy**, **spending-limit policy**, Testnet identity, the authorization digest scheme and **remaining ledger TTL**. No customer smart account is currently deployed through StealthBridge by this tool.
 
-## Prior-art and diligence
-Tukar provides a compelling testnet reference for private remittances, proofs and compliance. StealthBridge's proposed differentiators are multi-provider tenancy, modular settlement adapters, B2B confidentiality, stablecoin issuer controls, and public SDK surfaces. These are planned capabilities, not shipped claims.
+```bash
+cd tools/smart-account-preflight
+npm ci
+npm test
+npm run verify:testnet
+```
 
-## Legacy scaffolding
-This repo was renamed from the original monorepo. Historical \`apps/\`, \`services/\`, and \`packages/\` placeholders remain until reviewed; **implementation now belongs to the dedicated repositories above**. We preserve content rather than destroying it.
+A green preflight can still report `ttlExtensionReviewRequired: true` and `canDeployCustomerWallet: false`. TTL readings change with the live ledger, so **do not trust a historic TTL amount**. The tool never reads the local operator signing identity, installs passkeys, extends TTL or broadcasts a transaction.
 
-## Safety
-No real funds; never commit credentials or witnesses. Review [SECURITY.md](SECURITY.md). License selection and contributor governance will be settled through open development.
+[Smart-account release plan](docs/CUSTOMER-SMART-ACCOUNT-RELEASE-PLAN.md) · [Read-only preflight instructions](tools/smart-account-preflight/README.md) · [Wallet/privacy integration](docs/WALLET-SMART-ACCOUNT-AND-PRIVACY-INTEGRATION.md).
 
-## PolicyRegistry — separate governance prototype
+### Still unverified before a customer wallet
 
-The workspace includes the PolicyRegistry alongside the CorridorRegistry and the read-only GovernanceGate: [PolicyRegistry](contracts/policy-registry/README.md). It offers admin-authenticated policy commitment updates, strictly increasing revisions, and a fail-closed global pause. The governance contracts are intentionally **public configuration primitives**, not custody or ZK settlement solutions.
+WebAuthn relying-party/domain binding; actual passkey enrollment and second-device recovery; signer/session limits; anti-replay; delegated authorization; relayer policies; key loss and custody model; authorized TTL restoration; real asset transfer simulation; independently reviewed on-chain deployment.
 
-Refer to [the policy security model](docs/POLICY-REGISTRY.md) and [the comprehensive roadmap](ROADMAP.md). The governance contract IDs are attested on Testnet; no live asset integration or privacy rail is claimed.
+Do not extend storage TTL or deploy accounts automatically in CI. Both actions require an explicit reviewed on-chain operation.
 
-## Detailed implementation guide
+## Confidentiality research
 
-[Contract implementation guide](docs/IMPLEMENTATION-GUIDE.md) documents the evolving Soroban workspace, authorization rules, verification procedures, TTL handling and deployment boundaries.
+StealthBridge Business seeks **confidential commercial amounts with accountable counterparties**. StealthBridge Send seeks stronger **sender–recipient relationship privacy**. These are different threat models and cannot be promised from a public registry, network passphrase, or existence of a ZK library.
 
-## Source-level contract interface shared with the SDK
+- [Confidential Tokens research](integrations/confidential-tokens/README.md): issuer controls, auditor disclosure and amount confidentiality; status **NO-GO** for deployment without proven compatibility and issuer relationship.
+- [Stellar Private Payments verification](integrations/stellar-private-payments/VERIFICATION-GATES.md): independent proof/commitment/nullifier, address and metadata leakage, recovery and replay checks.
+- [Independent privacy reproduction](docs/INDEPENDENT-PRIVACY-REPRODUCTION-29-31.md): negative/positive tests and on-chain evidence.
+- [Privacy release gates](docs/PRIVACY-RELEASE-GATES.md): fail-closed requirements for any private financial execution.
 
-[`integrations/public-soroban-interface.v1.json`](integrations/public-soroban-interface.v1.json) inventories the *actual* CorridorRegistry, PolicyRegistry and GovernanceGate read methods and separates them from administrator-controlled writes. CI checks the public method names against Rust/Soroban source before an SDK can mirror the interface. This is a source ABI reference, **not** evidence of an on-chain contract instance, a privacy circuit, or a live transfer.
+There is no verified live privacy asset, no supported issuer/payout corridor and no reviewed platform fee collector. Operator or governance authority alone cannot enable these.
 
-## Customer wallet and privacy delivery
+## Cross-repository product integration
 
-Product integrations for Freighter, programmable passkey accounts, Confidential Tokens and Private Payments are tracked in [Wallet, Smart Account and ZK integration](docs/WALLET-SMART-ACCOUNT-AND-PRIVACY-INTEGRATION.md). The real public wallet connection is live on the frontend; smart-wallet deployment and verified private transfers are not yet enabled.
+```text
+Next.js customer app ── same-origin API → Rust/Axum backend → Stellar RPC + Neon
+   ├─ Personal / Send: real public route and recipient planning
+   ├─ Business: real pending applications, memberships, invitations, local drafts
+   └─ no signing / funding / payout execution
+TypeScript SDK: reviewed, bounded API response validation
+Three Soroban governance contracts: separately deployed public control plane
+Future: audited issuer/settlement/privacy execution, with explicit release approval
+```
+
+The customer app's signed-message login is not a Soroban smart-account deployment or authorization for asset movement. The current backend profile and organization records are off-chain application data, **not cryptographically private ledger records**.
+
+### Where to go next
+
+1. Maintain reproducible source and deployed-code parity for the three governance contracts.
+2. Validate full smart-account lifecycle on isolated Testnet accounts with explicit signing consent and secure recovery.
+3. Independently reproduce privacy and regulated issuer/accountability requirements.
+4. Implement verified, rate/fee-bounded and reconciled on-chain/provider execution only after external review.
+
+[Frontend](https://github.com/stealthbridge-labs/stealthbridge-frontend) · [Backend](https://github.com/stealthbridge-labs/stealthbridge-backend) · [SDK](https://github.com/stealthbridge-labs/stealthbridge-sdk) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
+
+**Public governance is deployed on Testnet. Private money movement is not.**

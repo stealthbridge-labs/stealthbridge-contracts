@@ -1,6 +1,8 @@
 # corridor-registry
 
-Placeholder for Sprint 0 architecture and feasibility research. No production implementation exists yet.
+This is the **implemented** Rust/Soroban source for public operator corridor governance, including authorization, pause/revocation and bounded public configuration checks. Its historical Testnet instance was deployed on October 17, 2026; new Rust source additions are **not automatically present in that on-chain instance**. See the [verified Testnet release](../../deployments/testnet/VERIFIED-GOVERNANCE-RELEASE-2026-10-17.md).
+
+This is **not** a custody, confidential-transfer, FX, or fiat payout contract. A public configuration flag cannot authorize customer funds.
 
 ## Registry methods and governance (v0.2)
 

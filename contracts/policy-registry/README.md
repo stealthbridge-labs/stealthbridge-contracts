@@ -32,3 +32,8 @@ The PolicyRegistry now supports a **two-phase administrator transfer**, with `pr
 ## Revision and commitment test coverage
 
 Native Soroban tests exercise wrong commitment bytes, zero/future/stale revisions, policy replacement, emergency pause, revocation and cross-registry reads. A public policy commitment must be generated from an independently reviewed policy statement; it is **not proof that anyone complied** with that statement.
+
+
+## Current source versus historical deployment
+
+This README describes the maintained Rust/Soroban source interface. The three governance contracts were observed on Stellar Testnet on October 17, 2026. Source methods added since that deployment are **not automatically available** at those historical contract IDs. Confirm the exact deployed WASM, method inventory, storage TTL and administrator with fresh chain reads before making any integration claim. Public governance results never authorize private transfers, fee collection or fiat payout. See [root protocol status](../../README.md) and [deployment evidence](../../deployments/testnet/VERIFIED-GOVERNANCE-RELEASE-2026-10-17.md).

@@ -59,3 +59,8 @@ The source-only ABI is published for future independently attested deployments,
 but the existing backend/frontend/SDK continue to use the last approved
 read-only interface revision until an explicitly reviewed cross-repository
 release updates the compatibility pin. Nothing here is deployed or enables funds.
+
+
+## Current source versus historical deployment
+
+This README describes the maintained Rust/Soroban source interface. The three governance contracts were observed on Stellar Testnet on October 17, 2026. Source methods added since that deployment are **not automatically available** at those historical contract IDs. Confirm the exact deployed WASM, method inventory, storage TTL and administrator with fresh chain reads before making any integration claim. Public governance results never authorize private transfers, fee collection or fiat payout. See [root protocol status](../../README.md) and [deployment evidence](../../deployments/testnet/VERIFIED-GOVERNANCE-RELEASE-2026-10-17.md).
