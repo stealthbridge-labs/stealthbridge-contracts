@@ -15,3 +15,27 @@ StealthBridge aims to offer recoverable passkey smart accounts for Send and role
 The immediate customer-facing interface must not contain an enabled Create passkey, Transfer or Withdraw action. Contract-instance presence alone is not proof of __check_auth, ownership, asset acceptance or recovery. The restricted-account tests here exercise source-only auth failure modes, not production readiness.
 
 References: https://skills.stellar.org/skills/dapp/SKILL.md; https://github.com/stellar/smart-account-kit; https://docs.openzeppelin.com/stellar-contracts/accounts/smart-account
+
+
+## Read-only Testnet dependency preflight (31 October 2026)
+
+A version-pinned, dependency-isolated preflight now lives at
+tools/smart-account-preflight. It uses the official Kit v0.10.0 JS package,
+Stellar SDK 16.4.1, and the audited-reference *identity* from the official
+stellar-accounts v0.8.0 deployment notes. From that directory: npm ci, npm test,
+npm run verify:testnet.
+
+It fetches raw account WASM from Testnet RPC, recomputes its SHA-256, verifies
+the expected digest scheme (preimage-v1), and checks deployed WebAuthn verifier,
+threshold and spending-limit policy code identities against the public ledger,
+including remaining ledger-entry lifetime. No signing, credential registration,
+secret reading, deployment, account funding or transfer occurs.
+
+Current observation: account code and two policy instances have only roughly
+20,000 Testnet ledgers left before expiry. A one-week TTL-warning is issued.
+Before any product wallet deployment, review and separately authorize an
+account-code and policy TTL extension plan; otherwise a seemingly valid
+deployment configuration can become unusable very soon after initial testing.
+
+This does NOT satisfy the required full account deployment, WebAuthn origin,
+recovery and signer-policy audits. The integration remains Testnet-only.
