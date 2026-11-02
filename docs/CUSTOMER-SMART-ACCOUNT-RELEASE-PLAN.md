@@ -31,11 +31,60 @@ threshold and spending-limit policy code identities against the public ledger,
 including remaining ledger-entry lifetime. No signing, credential registration,
 secret reading, deployment, account funding or transfer occurs.
 
-Current observation: account code and two policy instances have only roughly
-20,000 Testnet ledgers left before expiry. A one-week TTL-warning is issued.
-Before any product wallet deployment, review and separately authorize an
-account-code and policy TTL extension plan; otherwise a seemingly valid
-deployment configuration can become unusable very soon after initial testing.
+### Operator lifecycle audit (2 November 2026)
+
+A separate public read-only audit is now available from
+`tools/smart-account-preflight`: run `npm run --silent audit:testnet`.
+No admin wallet or operator key is needed. It neither reads credentials nor
+builds transaction material. No extension, restoration, signing, deployment or
+broadcast is approved by running it.
+
+The strict `verify:testnet` behavior is unchanged: it rejects required pins
+that are absent or have 720 or fewer remaining ledgers and stops at its first
+failure. Its “Account WASM missing or near expiry” message cannot identify which
+condition occurred. The audit observes all seven code/instance entries
+independently, verifies the Testnet passphrase, checks pinned dependency versions,
+recomputes every observed WASM SHA-256 and checks exact public identities.
+Account code TTL, verifier code TTL and each verifier/policy **instance TTL**
+are distinct measurements.
+
+The previously reported snapshot at ledger 5,487,598 (account 17,432 remaining
+ledgers, threshold instance 18,036, spending-limit instance 18,038) is historical
+context supplied for this investigation, not current evidence. None of these
+values establishes current presence or expiry. Use the new audit's observation
+ledgers and per-entry measurements; never extrapolate a current TTL from that
+snapshot or relabel an absent entry as near expiry.
+
+Review each JSON entry and retain the document even on exit 1. `healthy`
+requires matching identity and TTL above 120,960 ledgers. `low_ttl` maps to
+`review_extension`; `unavailable_live_entry` maps to
+`investigate_restore_or_republish`; `mismatch` maps to `investigate_mismatch`;
+`indeterminate` maps to `retry_observation`. A live-only absent entry cannot
+distinguish archive from nonexistent/never published: expiration and TTL remain
+null. No restoration or republication decision follows from this result alone.
+A zero-TTL sentinel returned with code/instance XDR is similarly a missing
+verified-live state; preserve the observed identity but do not invent a
+ledger-zero expiration. Investigate whether the entry is archived or absent
+through an independently reviewed state-archival source before selecting any
+paid maintenance operation.
+The minimum TTL covers only observed valid TTLs, not unavailable entries.
+Fresh ledger-header hashes, canonical uint32 ledger numbers and a bounded
+12-ledger observation span are required. Unverified context withholds the summary
+TTL. Exit 0 requires all entries healthy; operational review also exits 1.
+
+For a live entry, review extension separately. For a confirmed archived entry,
+review restoration separately. Either requires paid on-chain signing and an
+explicitly approved plan identifying affected code/instances and fees. Any
+republication likewise requires independent review and authorization. The audit
+contains no execution path or automatic maintenance commands. After any
+independently authorized maintenance, re-run observation. The operator has not
+approved an on-chain transaction as part of this audit.
+
+See the [operator runbook](../tools/smart-account-preflight/README.md#operator-lifecycle-audit-testnet-only)
+for schema, status, clock/freshness policy and failure interpretation. JSON keeps
+wallet readiness, customer-wallet-created and financial execution flags false;
+transactions built and broadcast are zero. This is Testnet only, with no Mainnet,
+customer funds or customer wallet deployment claims.
 
 This does NOT satisfy the required full account deployment, WebAuthn origin,
 recovery and signer-policy audits. The integration remains Testnet-only.

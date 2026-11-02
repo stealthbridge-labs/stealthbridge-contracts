@@ -9,7 +9,8 @@
   },
   "scripts": {
     "test": "node --test",
-    "verify:testnet": "node src/preflight.mjs"
+    "verify:testnet": "node src/preflight.mjs",
+    "audit:testnet": "node src/audit.mjs"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "16.4.1",

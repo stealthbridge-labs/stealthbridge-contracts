@@ -68,10 +68,14 @@ The Testnet Smart Account Kit/OpenZeppelin pinned-artifact verifier checks live 
 cd tools/smart-account-preflight
 npm ci
 npm test
+# Diagnose all seven pinned public code/instance entries first:
+npm run --silent audit:testnet
+# Strict historical verifier; currently expected to fail while required
+# published Testnet entries cannot be confirmed live:
 npm run verify:testnet
 ```
 
-A green preflight can still report `ttlExtensionReviewRequired: true` and `canDeployCustomerWallet: false`. TTL readings change with the live ledger, so **do not trust a historic TTL amount**. The tool never reads the local operator signing identity, installs passkeys, extends TTL or broadcasts a transaction.
+The audit reports network/ledger evidence, hashes and separate code/instance TTLs even if one entry fails. At ledger **5,522,979** on November 2, 2026, the public RPC returned zero TTL for the account WASM and threshold/spending-limit code and instances while WebAuthn code and instance were healthy; that is **not current proof of live availability** and the measurement is historical immediately after collection. The audit intentionally exits nonzero and recommends investigating archival status before a separately authorized maintenance plan. A green strict preflight would still show `canDeployCustomerWallet: false`. **Never trust historic TTL values.** The tool does not access `operator_local`, install passkeys, extend TTL, restore, build transactions or broadcast anything.
 
 [Smart-account release plan](docs/CUSTOMER-SMART-ACCOUNT-RELEASE-PLAN.md) · [Read-only preflight instructions](tools/smart-account-preflight/README.md) · [Wallet/privacy integration](docs/WALLET-SMART-ACCOUNT-AND-PRIVACY-INTEGRATION.md).
 
