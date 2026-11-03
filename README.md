@@ -77,7 +77,7 @@ npm run verify:testnet
 
 The audit reports network/ledger evidence, hashes and separate code/instance TTLs even if one entry fails. At ledger **5,522,979** on November 2, 2026, the public RPC returned zero TTL for the account WASM and threshold/spending-limit code and instances while WebAuthn code and instance were healthy; that is **not current proof of live availability** and the measurement is historical immediately after collection. The audit intentionally exits nonzero and recommends investigating archival status before a separately authorized maintenance plan. A green strict preflight would still show `canDeployCustomerWallet: false`. **Never trust historic TTL values.** The tool does not access `operator_local`, install passkeys, extend TTL, restore, build transactions or broadcast anything.
 
-[Smart-account release plan](docs/CUSTOMER-SMART-ACCOUNT-RELEASE-PLAN.md) · [November 2 archived-TTL evidence and no-broadcast review](docs/SMART-ACCOUNT-ARCHIVAL-REVIEW-2026-11-02.md) · [Read-only preflight instructions](tools/smart-account-preflight/README.md) · [Wallet/privacy integration](docs/WALLET-SMART-ACCOUNT-AND-PRIVACY-INTEGRATION.md).
+[Smart-account release plan](docs/CUSTOMER-SMART-ACCOUNT-RELEASE-PLAN.md) · [November 2 archived-TTL evidence and no-broadcast review](docs/SMART-ACCOUNT-ARCHIVAL-REVIEW-2026-11-02.md) · [Read-only preflight instructions](tools/smart-account-preflight/README.md) · [Read-only Core archival cross-check](tools/smart-account-preflight/README.md#archival-state-cross-check-testnet-read-only) · [Wallet/privacy integration](docs/WALLET-SMART-ACCOUNT-AND-PRIVACY-INTEGRATION.md).
 
 ### Still unverified before a customer wallet
 

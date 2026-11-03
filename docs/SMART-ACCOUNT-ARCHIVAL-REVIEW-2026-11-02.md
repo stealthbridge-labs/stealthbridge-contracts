@@ -30,10 +30,29 @@ The new observed ledger is beyond those three expiry points. The leading hypothe
 
 Stellar Core's state-aware `getledgerentry` interface can distinguish `live`, `archived`, and `not-found` when a node has the relevant archival data. The public SDK `getLedgerEntries` results above alone do not provide that definitive state classification.
 
+## Read-only Core cross-check tooling (November 3 update)
+
+The package now provides a state-aware cross-check without authorizing maintenance:
+
+```bash
+cd tools/smart-account-preflight
+npm run --silent review:archival -- --core-url http://127.0.0.1:11627
+```
+
+This command requires a trustworthy **separately provisioned** local Stellar Core with its HTTP query server on `HTTP_QUERY_PORT=11627`, not its command server (`HTTP_PORT`, typically 11626). The tool never installs, configures or starts Core and never queries the command server. Operators must independently check Testnet network configuration, trusted history/quorum setup, sync health and that port 11627 is the query interface. Only literal loopback URLs on this explicit port are allowed (IPv6 `[::1]` is also supported); no inferred ports, arbitrary hosts, paths, credentials, query parameters or redirects.
+
+It uses only POST `/getledgerentry` on Core, with exactly seven ordered repeated form `key` fields and no TTL keys. The current published Core commands response is positional: `entries` objects with `state`, optional `entry` LedgerEntry XDR and `liveUntilLedgerSeq`, plus top-level `ledgerSeq`. Earlier CAP draft JSON is rejected. Every returned code/instance entry must match its requested key and pinned identity. Code bytes are SHA-256 checked, account size is checked, and last-modified/TTL ranges are checked. Archived requires matching XDR and absent/zero TTL; live requires matching XDR and a positive TTL at least the Core ledger; not-found must omit entry and TTL. See [complete input, schema and exit rules](../tools/smart-account-preflight/README.md#archival-state-cross-check-testnet-read-only).
+
+The official pinned Testnet RPC supplies `getNetwork` and fresh canonical `getLatestLedger` anchors around the Core query. Core must be within 12 ledgers of the public bracket. This detects stale or inconsistent ledger observations, but **the query response does not contain Core's network passphrase, a ledger hash or a consensus proof**. A node on another network or a dishonest operator can report a plausible ledger number. The report labels this an operator-owned source and keeps `coreNetworkVerified: false`; independent operator verification remains essential.
+
+JSON actions are `review_restoration_of_confirmed_archived_entries`, `review_live_ttl_extension`, `investigate_not_found`, `investigate_mismatch` and `retry_or_verify_core_node`, according to each finding. Missing service or malformed data fails closed. Exit 0 requires all seven entries live **and** every live TTL strictly above 120,960 ledgers. Otherwise it exits 1 and reports any extension-review candidates. All-live is not permission for financial execution. `customerWalletReady`, `credentialRecoveryVerified` and `verifiedFinancialExecution` remain false, and transaction counts remain zero. **Restoration requires separately reviewed on-chain signing and explicit approval.** No execution commands or transaction payloads are emitted.
+
+This update adds tooling and offline tests; it does not replace the historical ledger evidence above with a fresh Core observation or confirm that the five unavailable entries are archived.
+
 ## No-broadcast review checklist
 
 1. Re-run `npm run --silent audit:testnet` from `tools/smart-account-preflight` and preserve both JSON and nonzero exit status. Verify all seven keys separately.
-2. Obtain state-aware archive evidence (or independently verifiable archive/restore metadata) for **each** of the five unavailable keys. Label each `archived`, `live`, `not-found`, or `unknown`. Do not blindly restore keys that are actually `not-found`.
+2. Run the read-only Core cross-check against the independently verified local query service, or obtain independently verifiable archive/restore metadata, for **each** of the five unavailable keys. Label each `archived`, `live`, `not-found`, or `unknown`. Do not blindly restore keys that are actually `not-found`.
 3. Confirm exact pinned WASM provenance, contract IDs, network, current Stellar protocol compatibility and recovery policy. Distinguish code archival from instance archival.
 4. Prepare an independently reviewed **Testnet-only** restoration footprint for entries confirmed archived, or TTL extension plan **only for verified-live entries**. Itemize resource fees, maximum payer cost, validity ledger, rollback/incident plan and impact on shared account policies. No contract replacement without separate approval.
 5. Obtain explicit authorization for the exact maintenance transaction, payer and fee cap **before** construction, signing, simulation or broadcast. Do not access `operator_local` signing credentials without that approval.

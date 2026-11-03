@@ -58,6 +58,40 @@ All reports keep `canDeployCustomerWallet`, `customerWalletCreated`, `credential
 
 Official RPC semantics: [getLedgerEntries](https://developers.stellar.org/docs/data/apis/rpc/api-reference/methods/getLedgerEntries) (live state, found entries and optional expiration), [getLatestLedger](https://developers.stellar.org/docs/data/apis/rpc/api-reference/methods/getLatestLedger) (ledger hash, sequence, close time and header).
 
+## Archival state cross-check (Testnet, read-only)
+
+With a trustworthy, separately provisioned local Stellar Core query service:
+
+```bash
+npm run --silent review:archival -- --core-url http://127.0.0.1:11627
+```
+
+The URL is required. Only the exact literal `http://127.0.0.1:11627` or `http://[::1]:11627` is accepted. Port 11627 is deliberately fixed for this review; no default, port discovery, hostname resolution, credentials, paths, trailing slash, query parameters or fragments are accepted. This tool never installs, configures or runs Core. If the service is unavailable, the JSON fails closed with `retry_or_verify_core_node` and exit 1.
+
+Operators must independently verify the node's **Testnet network configuration, trusted history/quorum configuration and syncing**, and that **HTTP_QUERY_PORT=11627** belongs to the query server. This is separate provisioning guidance, not configuration performed by this package. Never point this review at Core's command interface (`HTTP_PORT`, typically 11626). The tool never requests that interface, `/info`, `/getledgerentryraw`, or other Core endpoints. See the [published Core query commands and response schema](https://github.com/stellar/stellar-core/blob/master/docs/software/commands.md#http-query-server) and [Core configuration reference](https://github.com/stellar/stellar-core/blob/master/docs/stellar-core_example.cfg).
+
+One `POST /getledgerentry` sends `application/x-www-form-urlencoded` with exactly seven unique, repeated `key` fields containing base64 LedgerKey XDR, in pinned manifest order: account code; WebAuthn instance/code; threshold instance/code; spending-limit instance/code. No TTL keys or snapshot parameter are sent. Both Core and public RPC fetches reject redirects, have a 15-second timeout, and require JSON bounded to 4 MiB while streaming. Errors are fixed reason codes; no remote error text, raw XDR, credentials, execution commands or transaction payloads appear in the report.
+
+The current response must contain exactly seven **positional** objects in `entries` and a positive uint32 `ledgerSeq`. Each object uses only `state`, optional `entry` (base64 **LedgerEntry** XDR) and optional `liveUntilLedgerSeq`. Unknown fields, missing/extra entries, CAP draft `e`/`ttl` fields and malformed envelopes fail closed. A returned entry's actual ledger key is reconstructed and compared to the exact requested key. Code requires both embedded hash and computed WASM SHA-256 to match the pin, plus the account byte size. Instances require the exact address, instance key, persistent durability and executable WASM hash. Last-modified must be positive and no later than the Core observation ledger.
+
+Only `getNetwork` and two `getLatestLedger` reads use the pinned official public Testnet RPC. The passphrase must match Testnet. Both anchors must pass the existing canonical header/hash, close-time and 12-ledger span checks. Core must fall between the first RPC ledger minus 12 and the last RPC ledger plus 12. Invalid or stale context makes non-mismatch states indeterminate and withholds live TTL minima. **Core returns no network passphrase or consensus proof in this endpoint**: RPC Testnet identity and ledger proximity cannot authenticate Core's network or establish consensus trust. The report always includes the operator-owned source warning and `source.coreNetworkVerified: false`.
+
+| Report state | Required evidence | Action |
+| --- | --- | --- |
+| `archived` | Matching LedgerEntry identity/SHA; TTL absent or zero | `review_restoration_of_confirmed_archived_entries` |
+| `live` | Matching LedgerEntry identity/SHA; positive uint32 TTL at least Core ledger | `review_live_ttl_extension` when remaining TTL is at most 120,960 ledgers |
+| `not_found` | Core `not-found`, with neither entry nor TTL present | `investigate_not_found` |
+| `mismatch` | Wrong key/identity/code bytes, or contradictory state/TTL fields | `investigate_mismatch` |
+| `indeterminate` | Invalid response/XDR/live TTL, unavailable service or invalid context | `retry_or_verify_core_node` |
+
+Schema version 1 includes the Testnet passphrase, Core ledger, public RPC bracket, seven public key SHA-256 hashes, per-entry identity and code SHA validation, and `summary.minimumLiveTtlRemainingLedgers` over verified live entries only. Instance `sha256Verified` is `null` because instances reference code; their code bytes are checked separately. All matching archived findings are conditional on the operator's Core trust checks. Not-found is not proof of archival and never justifies restoration.
+
+Exit 1 means any archived, not-found, mismatched, indeterminate or missing entry, pin failure, invalid network/ledger context, **or any live TTL at or below the 120,960-ledger review threshold**. Exit 0 requires all seven entries to be observed live with valid identity and **each live TTL above the review threshold**. The report separately exposes factual `allEntriesLive` and the stricter `noTtlReviewNeeded` exit gate. **All-live is never financial execution authorization.** Reports always keep `customerWalletReady`, `canDeployCustomerWallet`, `customerWalletCreated`, `credentialRecoveryVerified` and `verifiedFinancialExecution` false, with `broadcastTransactions: 0` and `transactionsBuilt: 0`.
+
+Restoration requires a separately reviewed on-chain plan, signing and explicit approval. This tool constructs, simulates, signs and broadcasts nothing. Retain JSON and exit status for review; recheck live state after any separately authorized maintenance. The [archival review record](../../docs/SMART-ACCOUNT-ARCHIVAL-REVIEW-2026-11-02.md) preserves historical observations without treating them as current evidence.
+
+The additional offline tests use injected RPC/fetch APIs and synthetic LedgerEntry XDR, including a mocked local HTTP request that checks method, path, ordered seven-key form, redirect policy, timeout signal and the absence of other network/API calls. Existing audit and verifier tests remain intact.
+
 ## Not a customer wallet deployment
 
 This utility does **not** read `operator_local` credentials, create accounts, register passkeys, test cross-device recovery, extend TTL, sign authorization entries or broadcast transactions. It never establishes smart-account security, user key recovery, custody, issuer support, private transfers or real-money payment eligibility.
