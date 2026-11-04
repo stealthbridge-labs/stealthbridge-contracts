@@ -473,24 +473,36 @@ mod tests {
         let client = PolicyRegistryClient::new(&env, &contract);
         let name = String::from_str(&env, "confidential_issuer_policy");
         let governance = BytesN::from_array(&env, &[7u8; 32]);
-        let local_review = BytesN::from_array(&env, &[
-            0x4f,0x1d,0x1a,0x8c,0xbf,0x79,0xa6,0xd8,
-            0xb8,0xd6,0x78,0x00,0x34,0xde,0x12,0x33,
-            0x99,0x83,0x54,0x0d,0x83,0x6e,0x98,0x79,
-            0xce,0x1a,0x3e,0x03,0xbd,0x38,0xf5,0x71,
-        ]);
+        let local_review = BytesN::from_array(
+            &env,
+            &[
+                0x4f, 0x1d, 0x1a, 0x8c, 0xbf, 0x79, 0xa6, 0xd8, 0xb8, 0xd6, 0x78, 0x00, 0x34, 0xde,
+                0x12, 0x33, 0x99, 0x83, 0x54, 0x0d, 0x83, 0x6e, 0x98, 0x79, 0xce, 0x1a, 0x3e, 0x03,
+                0xbd, 0x38, 0xf5, 0x71,
+            ],
+        );
         assert!(!client.is_effective_commitment(&name, &1, &local_review));
-        client.set_rule(&name, &PolicyRecord {
-            revision: 1, enabled: true, public_commitment: governance.clone(),
-        });
+        client.set_rule(
+            &name,
+            &PolicyRecord {
+                revision: 1,
+                enabled: true,
+                public_commitment: governance.clone(),
+            },
+        );
         assert!(client.is_effective_commitment(&name, &1, &governance));
         assert!(!client.is_effective_commitment(&name, &1, &local_review));
         client.set_paused(&true);
         assert!(!client.is_effective_commitment(&name, &1, &governance));
         client.set_paused(&false);
-        client.set_rule(&name, &PolicyRecord {
-            revision: 2, enabled: false, public_commitment: governance,
-        });
+        client.set_rule(
+            &name,
+            &PolicyRecord {
+                revision: 2,
+                enabled: false,
+                public_commitment: governance,
+            },
+        );
         assert!(!client.is_effective_commitment(&name, &2, &local_review));
     }
 
