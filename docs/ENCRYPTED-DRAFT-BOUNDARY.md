@@ -1,0 +1,3 @@
+# Customer encrypted drafts: Soroban authorization boundary
+
+Encrypted user drafts are off-chain planning data, not payment instructions. AES-GCM authentication tags, passphrases, UUIDs and private review digests do not constitute ZK proofs, signer credentials, or governance policy commitments. PolicyRegistry activation requires a separately authorized revision and public commitment. Soroban payments remain disabled pending independently audited cryptographic verifiers, issuer controls, authorization policies, nullifier/replay protection, and actual Testnet integration evidence. Customers do not deploy StealthBridge infrastructure.
