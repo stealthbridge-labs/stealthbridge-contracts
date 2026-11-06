@@ -72,6 +72,18 @@ class GovernanceObservationTests(unittest.TestCase):
                 bad["contracts"]["policy-registry"][field] = bad["contracts"]["corridor-registry"][field]
                 with self.assertRaises(ValueError): self.check(bad)
 
+    def test_integer_values_never_masquerade_as_release_booleans(self):
+        # Python normally considers 0 == False and 1 == True.
+        for name,key,value in (
+            ("scope","privacyVerified",0),
+            ("scope","governanceDeployed",1),
+            ("verification","independentExternalAuditCompleted",0),
+            ("verification","onchainWasmReadbackChecked",1)
+        ):
+            with self.subTest(name=name,key=key):
+                forged=deepcopy(self.record)
+                forged[name][key]=value
+                with self.assertRaises(ValueError): self.check(forged)
     def test_unreviewed_mutations_are_rejected(self):
         for field, value in (("network", "mainnet"), ("schemaVersion", 3), ("extra", "unsanctioned")):
             with self.subTest(field=field):

@@ -61,9 +61,15 @@ def validate_observation(record, provenance):
             "this observed release must use the approved Testnet operator")
     require(type(record["notes"]) is str and bool(record["notes"]),
             "release notes are required")
-    require(record["scope"] == SCOPE_FLAGS,
+    require(type(record["scope"]) is dict and
+            set(record["scope"]) == set(SCOPE_FLAGS) and
+            all(type(value) is bool for value in record["scope"].values()) and
+            record["scope"] == SCOPE_FLAGS,
             "governance release must not claim payments, fees, or privacy")
-    require(record["verification"] == VERIFICATION_FLAGS,
+    require(type(record["verification"]) is dict and
+            set(record["verification"]) == set(VERIFICATION_FLAGS) and
+            all(type(value) is bool for value in record["verification"].values()) and
+            record["verification"] == VERIFICATION_FLAGS,
             "unreviewed or missing observation checks")
     require(provenance.get("dirty") is False and provenance.get("reproducibleBuilds") == 2
             and provenance.get("sdk") == "27.0.6" and provenance.get("targetProtocol") == 27,
