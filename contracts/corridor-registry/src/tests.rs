@@ -633,3 +633,36 @@ fn zero_corridor_config_digest_never_becomes_public_approval() {
     client.set_paused(&true);
     assert!(!client.is_enabled_with_digest(&id, &reviewed));
 }
+
+#[test]
+fn customer_local_review_hash_cannot_approve_a_corridor_configuration() {
+    // Reuses the actual SDK/Rust private review fingerprint vector. It is
+    // neither the operator-authorized corridor config digest nor a ZK proof.
+    let f = Fixture::new();
+    f.env.mock_all_auths();
+    let client = f.client();
+    let corridor = String::from_str(&f.env, "operator_config_not_customer_digest");
+    let operator_digest = BytesN::from_array(&f.env, &[7u8; 32]);
+        let customer_review = BytesN::from_array(
+            &f.env,
+            &[
+                0x4f, 0x1d, 0x1a, 0x8c, 0xbf, 0x79, 0xa6, 0xd8, 0xb8, 0xd6, 0x78, 0x00, 0x34, 0xde,
+                0x12, 0x33, 0x99, 0x83, 0x54, 0x0d, 0x83, 0x6e, 0x98, 0x79, 0xce, 0x1a, 0x3e, 0x03,
+                0xbd, 0x38, 0xf5, 0x71,
+            ],
+        );
+
+    assert!(!client.is_enabled_with_digest(&corridor, &customer_review));
+    client.set_enabled(&corridor, &true);
+    assert!(!client.is_enabled_with_digest(&corridor, &customer_review));
+    client.approve_config(&corridor, &operator_digest, &150);
+    assert!(client.is_enabled_with_digest(&corridor, &operator_digest));
+    assert!(!client.is_enabled_with_digest(&corridor, &customer_review));
+    client.set_paused(&true);
+    assert!(!client.is_enabled_with_digest(&corridor, &operator_digest));
+    client.set_paused(&false);
+    client.set_enabled(&corridor, &false);
+    client.set_enabled(&corridor, &true);
+    assert!(!client.is_enabled_with_digest(&corridor, &operator_digest));
+    assert!(!client.is_enabled_with_digest(&corridor, &customer_review));
+}
