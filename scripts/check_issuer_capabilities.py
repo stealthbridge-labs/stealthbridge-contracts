@@ -27,6 +27,9 @@ def validate(record):
     require(type(record["schemaVersion"]) is int and record["schemaVersion"]==1
             and record["primitive"]=="issuer-controlled-confidential-token"
             and record["decision"]=="NO_GO", "issuer capability is not approved")
+    require(type(record["reviewDate"]) is str and
+            record["reviewDate"]=="2026-10-13",
+            "unreviewed issuer capability evidence date")
     u=record["upstream"];v=record["local"]
     require(type(u) is dict and set(u)==UPSTREAM and
             u["repository"]=="OpenZeppelin/stellar-contracts" and

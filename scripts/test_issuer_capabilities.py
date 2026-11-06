@@ -25,6 +25,12 @@ class IssuerCapabilities(unittest.TestCase):
             record["disclosures"][key]=value
             with self.subTest(key=key),self.assertRaisesRegex(ValueError,"privacy disclosure"):
                 validate(record)
+    def test_review_date_is_pinned_and_cannot_make_a_future_issuer_claim(self):
+        for date in ("2027-01-01", "2026-11-06", None, 20261013):
+            altered=copy.deepcopy(RECORD)
+            altered["reviewDate"]=date
+            with self.subTest(date=date),self.assertRaisesRegex(ValueError,"unreviewed issuer"):
+                validate(altered)
     def test_unreviewed_upstream_version_breaks_pin(self):
         record=copy.deepcopy(RECORD)
         record["upstream"]["sorobanSdk"]="27.0.6"
