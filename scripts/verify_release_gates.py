@@ -1,20 +1,34 @@
 #!/usr/bin/env python3
-"""Offline fail-closed release guard; never deploys or signs."""
+"""Offline source-only release guard. Explicit checks must survive python -O."""
 import json
 from pathlib import Path
 
+def require(allowed, reason):
+    if not allowed:
+        raise ValueError(reason)
+
 def verify(manifest, interface):
-    assert manifest.get("schemaVersion") == 1
-    assert manifest.get("network") == "testnet"
-    assert manifest.get("status") == "not-deployed"
-    assert manifest.get("verified") is False
-    assert manifest.get("contractAddresses") == {}
-    assert manifest.get("assetIssuers") == {}
-    assert manifest.get("txHashes") == []
-    assert interface.get("schemaVersion") == 1
-    assert interface.get("network") == "testnet"
-    assert interface.get("status") == "source-interface-only"
-    assert isinstance(interface.get("contracts"), dict)
+    require(type(manifest) is dict and type(interface) is dict,
+            "release record must be a JSON object")
+    require(type(manifest.get("schemaVersion")) is int and
+            manifest["schemaVersion"] == 1 and
+            manifest.get("network") == "testnet" and
+            manifest.get("status") == "not-deployed" and
+            manifest.get("verified") is False,
+            "unverified source manifest cannot claim deployment")
+    require(type(manifest.get("contractAddresses")) is dict and
+            not manifest["contractAddresses"] and
+            type(manifest.get("assetIssuers")) is dict and
+            not manifest["assetIssuers"] and
+            type(manifest.get("txHashes")) is list and
+            not manifest["txHashes"],
+            "unsupported deployment, asset or transaction evidence")
+    require(type(interface.get("schemaVersion")) is int and
+            interface["schemaVersion"] == 1 and
+            interface.get("network") == "testnet" and
+            interface.get("status") == "source-interface-only" and
+            type(interface.get("contracts")) is dict,
+            "source interface is not approved for financial execution")
     return True
 
 if __name__ == "__main__":
