@@ -32,6 +32,12 @@ class PrivateRailEvidenceTests(unittest.TestCase):
     changed=copy.deepcopy(DOC);changed["rails"][1]["vectors"].pop(0)
     with self.assertRaisesRegex(ValueError,"missing negative"):
         validate(changed)
+ def test_evidence_input_classes_cannot_be_replaced_with_unreviewed_secrets(self):
+    for rail in (0,1):
+        bad=copy.deepcopy(DOC)
+        bad["rails"][rail]["vectors"][0]["inputClass"]="private-wallet-secret-accidentally-logged"
+        with self.subTest(rail=rail),self.assertRaisesRegex(ValueError,"unverified or altered"):
+            validate(bad)
  def test_public_withdrawal_edge_must_not_be_declared_anonymous(self):
     changed=copy.deepcopy(DOC);changed["rails"][1]["vectors"][4]["expected"]="external-amount-hidden"
     with self.assertRaisesRegex(ValueError,"unverified or altered"):

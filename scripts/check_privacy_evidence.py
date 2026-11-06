@@ -8,6 +8,12 @@ ROOT=Path(__file__).resolve().parents[1]
 GATES={"cryptographicSoundness","independentAudit","crossWalletReproduction",
        "publicDisclosureReview","ledgerEvidence","issuerOrPoolAuthorization"}
 SPECS={
+ "inputs":("pinned-wasm-two-test-wallets-correct-proof",
+          "mismatched-amount-commitment-or-account-binding",
+          "different-circuit-or-vk-hash",
+          "frozen-account-valid-amount-proof",
+          "observer-without-registered-auditor-decryption-key",
+          "deposit-withdraw-transaction",),
  "confidential-token":{
   "repo":"OpenZeppelin/stellar-contracts",
   "ref":"6b2f03402b6b98fad6b4247b5e15dce91a0b205d",
@@ -23,6 +29,12 @@ SPECS={
               "no-plaintext-disclosure",
               "underlying-amount-and-account-public"),
  },
+ "inputs":("two-independent-wallets-deposit-transfer-withdraw",
+          "reused-private-spend-nullifier",
+          "invalid-association-set-proof",
+          "withdraw-output-exceeds-valid-private-balance",
+          "deposit-withdraw-observer-transaction",
+          "lost-client-note-secret-or-wallet-storage",),
  "private-payments":{
   "repo":"NethermindEth/stellar-private-payments",
   "ref":"0471e6be8161c2013cfc8387bd7b72b70e480cf5",
@@ -78,12 +90,12 @@ def validate(record):
         vectors=row["vectors"]
         require(type(vectors) is list and len(vectors)==6,
                 f"missing negative/positive {name} vectors")
-        for vector,case,outcome in zip(vectors,spec["cases"],spec["outcomes"]):
+        for vector,case,outcome,input_class in zip(vectors,spec["cases"],spec["outcomes"],spec["inputs"]):
             require(type(vector) is dict and set(vector)=={
                 "id","inputClass","expected","evidence"} and
                 vector["id"]==case and
                 type(vector["inputClass"]) is str and
-                len(vector["inputClass"])>10 and
+                vector["inputClass"]==input_class and
                 vector["expected"]==outcome and vector["evidence"] is None,
                 f"unverified or altered privacy vector {case}")
     return 12
