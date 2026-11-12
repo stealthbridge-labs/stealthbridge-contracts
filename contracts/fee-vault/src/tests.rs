@@ -28,7 +28,10 @@ fn deposits_accrue_and_claim_only_to_explicit_beneficiary() {
     assert!(vault.is_paused());
     assert!(vault.claims_paused());
     assert_eq!(vault.claimable_fees(), 0);
-    assert_eq!(vault.try_deposit_fee(&payer, &100), Err(Ok(FeeVaultError::Paused)));
+    assert_eq!(
+        vault.try_deposit_fee(&payer, &100),
+        Err(Ok(FeeVaultError::Paused))
+    );
     vault.set_paused(&false);
     vault.deposit_fee(&payer, &1_000);
     assert_eq!(vault.claimable_fees(), 1_000);
@@ -39,7 +42,10 @@ fn deposits_accrue_and_claim_only_to_explicit_beneficiary() {
     assert_eq!(vault.claimable_fees(), 625);
     assert_eq!(vault.vault_balance(), 625);
     assert_eq!(token.balance(&operator), 375);
-    assert_eq!(vault.try_claim_fees(&626), Err(Ok(FeeVaultError::InsufficientBalance)));
+    assert_eq!(
+        vault.try_claim_fees(&626),
+        Err(Ok(FeeVaultError::InsufficientBalance))
+    );
 }
 
 #[test]
@@ -52,7 +58,10 @@ fn unsolicited_token_transfer_does_not_become_claimable_revenue() {
     assert_eq!(vault.vault_balance(), 200);
     assert_eq!(vault.claimable_fees(), 0);
     vault.set_claims_paused(&false);
-    assert_eq!(vault.try_claim_fees(&1), Err(Ok(FeeVaultError::InsufficientBalance)));
+    assert_eq!(
+        vault.try_claim_fees(&1),
+        Err(Ok(FeeVaultError::InsufficientBalance))
+    );
     vault.set_paused(&false);
     vault.deposit_fee(&payer, &50);
     assert_eq!(vault.vault_balance(), 250);
@@ -69,12 +78,26 @@ fn invalid_amounts_and_overdrafts_fail_closed() {
     let token = token::Client::new(&env, &asset);
     vault.set_paused(&false);
     for amount in [0, -1, i128::MIN] {
-        assert_eq!(vault.try_deposit_fee(&payer, &amount), Err(Ok(FeeVaultError::InvalidAmount)));
-        assert_eq!(vault.try_claim_fees(&amount), Err(Ok(FeeVaultError::InvalidAmount)));
+        assert_eq!(
+            vault.try_deposit_fee(&payer, &amount),
+            Err(Ok(FeeVaultError::InvalidAmount))
+        );
+        assert_eq!(
+            vault.try_claim_fees(&amount),
+            Err(Ok(FeeVaultError::InvalidAmount))
+        );
     }
     assert_eq!(token.balance(&payer), 1_000_000);
     assert_eq!(vault.claimable_fees(), 0);
-    assert_eq!(vault.try_claim_fees(&1), Err(Ok(FeeVaultError::InsufficientBalance)));
+    assert_eq!(
+        vault.try_claim_fees(&1),
+        Err(Ok(FeeVaultError::ClaimsPaused))
+    );
+    vault.set_claims_paused(&false);
+    assert_eq!(
+        vault.try_claim_fees(&1),
+        Err(Ok(FeeVaultError::InsufficientBalance))
+    );
 }
 
 #[test]
@@ -129,9 +152,15 @@ fn emergency_pause_rejects_new_accrual_not_incident_recovery() {
     vault.deposit_fee(&payer, &100);
     vault.set_paused(&true);
     assert!(vault.claims_paused());
-    assert_eq!(vault.try_claim_fees(&100), Err(Ok(FeeVaultError::ClaimsPaused)));
+    assert_eq!(
+        vault.try_claim_fees(&100),
+        Err(Ok(FeeVaultError::ClaimsPaused))
+    );
     vault.set_claims_paused(&false);
-    assert_eq!(vault.try_deposit_fee(&payer, &1), Err(Ok(FeeVaultError::Paused)));
+    assert_eq!(
+        vault.try_deposit_fee(&payer, &1),
+        Err(Ok(FeeVaultError::Paused))
+    );
     vault.claim_fees(&100);
     assert_eq!(token::Client::new(&env, &asset).balance(&operator), 100);
     assert_eq!(vault.claimable_fees(), 0);
@@ -159,9 +188,18 @@ fn admin_and_beneficiary_rotate_independently_in_two_steps() {
     assert_eq!(vault.pending_beneficiary(), None);
     assert_eq!(vault.get_beneficiary(), new_beneficiary);
     vault.claim_fees(&90);
-    assert_eq!(token::Client::new(&env, &asset).balance(&new_beneficiary), 90);
-    assert_eq!(vault.try_accept_admin(), Err(Ok(FeeVaultError::NoPendingAdmin)));
-    assert_eq!(vault.try_accept_beneficiary(), Err(Ok(FeeVaultError::NoPendingBeneficiary)));
+    assert_eq!(
+        token::Client::new(&env, &asset).balance(&new_beneficiary),
+        90
+    );
+    assert_eq!(
+        vault.try_accept_admin(),
+        Err(Ok(FeeVaultError::NoPendingAdmin))
+    );
+    assert_eq!(
+        vault.try_accept_beneficiary(),
+        Err(Ok(FeeVaultError::NoPendingBeneficiary))
+    );
 }
 
 #[test]
@@ -192,7 +230,9 @@ fn unauthorized_claim_rotation_and_upgrade_are_rejected() {
     assert!(vault.try_set_claims_paused(&true).is_err());
     assert!(vault.try_propose_admin(&payer).is_err());
     assert!(vault.try_propose_beneficiary(&payer).is_err());
-    assert!(vault.try_propose_upgrade(&BytesN::from_array(&env, &[1; 32]), &5).is_err());
+    assert!(vault
+        .try_propose_upgrade(&BytesN::from_array(&env, &[1; 32]), &5)
+        .is_err());
     assert_eq!(token::Client::new(&env, &asset).balance(&vault_id), 500);
     assert_eq!(vault.claimable_fees(), 500);
 }
@@ -247,19 +287,40 @@ fn upgrade_requires_pause_nonzero_hash_delay_and_correct_hash() {
     let hash = BytesN::from_array(&env, &[42; 32]);
     let wrong = BytesN::from_array(&env, &[17; 32]);
     let zero = BytesN::from_array(&env, &[0; 32]);
-    assert_eq!(vault.try_propose_upgrade(&zero, &5), Err(Ok(FeeVaultError::InvalidUpgradeHash)));
-    assert_eq!(vault.try_propose_upgrade(&hash, &4), Err(Ok(FeeVaultError::InvalidUpgradeDelay)));
+    assert_eq!(
+        vault.try_propose_upgrade(&zero, &5),
+        Err(Ok(FeeVaultError::InvalidUpgradeHash))
+    );
+    assert_eq!(
+        vault.try_propose_upgrade(&hash, &4),
+        Err(Ok(FeeVaultError::InvalidUpgradeDelay))
+    );
     vault.set_paused(&false);
-    assert_eq!(vault.try_propose_upgrade(&hash, &5), Err(Ok(FeeVaultError::UpgradeRequiresPause)));
+    assert_eq!(
+        vault.try_propose_upgrade(&hash, &5),
+        Err(Ok(FeeVaultError::UpgradeRequiresPause))
+    );
     vault.set_paused(&true);
     vault.propose_upgrade(&hash, &5);
-    assert_eq!(vault.try_execute_upgrade(&wrong), Err(Ok(FeeVaultError::InvalidUpgradeHash)));
-    assert_eq!(vault.try_execute_upgrade(&hash), Err(Ok(FeeVaultError::UpgradeNotReady)));
+    assert_eq!(
+        vault.try_execute_upgrade(&wrong),
+        Err(Ok(FeeVaultError::InvalidUpgradeHash))
+    );
+    assert_eq!(
+        vault.try_execute_upgrade(&hash),
+        Err(Ok(FeeVaultError::UpgradeNotReady))
+    );
     vault.cancel_upgrade();
     assert_eq!(vault.pending_upgrade(), None);
-    assert_eq!(vault.try_execute_upgrade(&hash), Err(Ok(FeeVaultError::NoPendingUpgrade)));
+    assert_eq!(
+        vault.try_execute_upgrade(&hash),
+        Err(Ok(FeeVaultError::NoPendingUpgrade))
+    );
     // A staged hash has a finite window; a stale proposal can never execute.
     vault.propose_upgrade(&hash, &5);
     env.ledger().with_mut(|info| info.sequence_number += 10_006);
-    assert_eq!(vault.try_execute_upgrade(&hash), Err(Ok(FeeVaultError::UpgradeExpired)));
+    assert_eq!(
+        vault.try_execute_upgrade(&hash),
+        Err(Ok(FeeVaultError::UpgradeExpired))
+    );
 }

@@ -165,15 +165,9 @@ impl FeeVault {
         env.storage()
             .instance()
             .set(&DataKey::Asset, &token_address);
-        env.storage()
-            .instance()
-            .set(&DataKey::Paused, &true);
-        env.storage()
-            .instance()
-            .set(&DataKey::ClaimsPaused, &true);
-        env.storage()
-            .instance()
-            .set(&DataKey::Claimable, &0_i128);
+        env.storage().instance().set(&DataKey::Paused, &true);
+        env.storage().instance().set(&DataKey::ClaimsPaused, &true);
+        env.storage().instance().set(&DataKey::Claimable, &0_i128);
         renew(&env);
     }
     pub fn get_admin(env: Env) -> Address {
@@ -196,9 +190,7 @@ impl FeeVault {
     }
     pub fn set_paused(env: Env, paused: bool) {
         require_admin(&env);
-        env.storage()
-            .instance()
-            .set(&DataKey::Paused, &paused);
+        env.storage().instance().set(&DataKey::Paused, &paused);
         renew(&env);
     }
 
@@ -234,12 +226,10 @@ impl FeeVault {
         lock_transfer(&env)?;
         token::Client::new(&env, &asset(&env)).transfer(
             &payer,
-            &env.current_contract_address(),
+            env.current_contract_address(),
             &amount,
         );
-        env.storage()
-            .instance()
-            .set(&DataKey::Claimable, &next);
+        env.storage().instance().set(&DataKey::Claimable, &next);
         unlock_transfer(&env);
         FeeDeposited { payer, amount }.publish(&env);
         renew(&env);
@@ -314,9 +304,7 @@ impl FeeVault {
             .get(&DataKey::PendingAdmin)
             .ok_or(FeeVaultError::NoPendingAdmin)?;
         successor.require_auth();
-        env.storage()
-            .instance()
-            .set(&DataKey::Admin, &successor);
+        env.storage().instance().set(&DataKey::Admin, &successor);
         env.storage().instance().remove(&DataKey::PendingAdmin);
         AdminRotated {
             administrator: successor,
@@ -340,7 +328,9 @@ impl FeeVault {
     }
     pub fn cancel_beneficiary_proposal(env: Env) {
         require_admin(&env);
-        env.storage().instance().remove(&DataKey::PendingBeneficiary);
+        env.storage()
+            .instance()
+            .remove(&DataKey::PendingBeneficiary);
         renew(&env);
     }
     pub fn accept_beneficiary(env: Env) -> Result<(), FeeVaultError> {
@@ -353,7 +343,9 @@ impl FeeVault {
         env.storage()
             .instance()
             .set(&DataKey::Beneficiary, &successor);
-        env.storage().instance().remove(&DataKey::PendingBeneficiary);
+        env.storage()
+            .instance()
+            .remove(&DataKey::PendingBeneficiary);
         BeneficiaryRotated {
             beneficiary: successor,
         }

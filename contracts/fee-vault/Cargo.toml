@@ -3,7 +3,7 @@ name = "stealthbridge-fee-vault"
 version = "0.1.0"
 edition = "2021"
 publish = false
-license.workspace = true
+license = "MIT"
 [lib]
 crate-type = ["cdylib", "lib"]
 [dependencies]
