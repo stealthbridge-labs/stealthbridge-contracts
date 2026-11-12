@@ -143,6 +143,17 @@ impl CorridorRegistry {
         proposed.require_auth();
         env.storage().instance().set(&DataKey::Admin, &proposed);
         env.storage().instance().remove(&DataKey::PendingAdmin);
+        // A successor must review and stage their own upgrade with a fresh
+        // timelock. Never inherit the outgoing administrator's mature proposal.
+        let stale: Option<UpgradeProposal> = env.storage().instance().get(&DataKey::Upgrade);
+        env.storage().instance().remove(&DataKey::Upgrade);
+        if let Some(proposal) = stale {
+            UpgradeCancelled {
+                wasm_hash: proposal.wasm_hash,
+            }
+            .publish(&env);
+        }
+
         renew_instance(&env);
         Ok(())
     }

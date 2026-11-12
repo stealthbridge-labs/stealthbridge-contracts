@@ -60,3 +60,17 @@ After manual review: verify the current deployed hash and admin, upload the *new
 Mainnet release requires versioned storage migrations and compatibility/rollback rehearsals; a release multisig with role segregation; independent security review; contract events for proposal/execution attribution; TTL/rent and failed-upload operational drills; bounded on-chain costs; upgrade-delay monitoring; shadow reads comparing SDK/backend behavior; alerting; post-release gradual activation; and a staged proof verifier and legally supported payment rail.
 
 **There is no wallet/seed/private-key request, fund transfer, private witness, or automatic deployment in this runbook.**
+
+## Administrator handover and pending upgrades (source change, 2026-11-12)
+
+In the updated corridor and policy registry source, successful `accept_admin`
+atomically cancels any pending upgrade and emits the existing `UpgradeCancelled`
+event. Merely nominating or cancelling a successor does not change the proposal.
+The successor must stage a newly reviewed hash and wait a fresh timelock. The
+pause state remains unchanged. Unauthorized acceptance cannot cancel a proposal.
+
+This preserves the existing ABI and storage layout. It does not change bytecode
+at historical deployed contract addresses. Operators must build and review a
+release, compare WASM and storage compatibility, then use the existing authorized
+upgrade process before relying on this behavior on-chain. No contract upgrade,
+deployment, administration transfer, or financial execution was broadcast here.

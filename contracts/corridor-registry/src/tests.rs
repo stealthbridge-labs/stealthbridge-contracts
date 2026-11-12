@@ -666,3 +666,59 @@ fn customer_local_review_hash_cannot_approve_a_corridor_configuration() {
     assert!(!client.is_enabled_with_digest(&corridor, &operator_digest));
     assert!(!client.is_enabled_with_digest(&corridor, &customer_review));
 }
+
+#[test]
+fn administrator_handover_cancels_inherited_upgrade_and_restarts_timelock() {
+    let env = Env::default();
+    env.ledger().with_mut(|l| {
+        l.protocol_version = 27;
+        l.sequence_number = 100;
+        l.max_entry_ttl = TTL_EXTEND + 1000;
+    });
+    let outgoing = Address::generate(&env);
+    let successor = Address::generate(&env);
+    let id = env.register(CorridorRegistry, (outgoing.clone(),));
+    let client = CorridorRegistryClient::new(&env, &id);
+    let hash = BytesN::from_array(&env, &[19; 32]);
+    env.mock_all_auths();
+    client.set_paused(&true);
+    client.propose_upgrade(&hash, &5);
+    client.propose_admin(&successor);
+    // Merely nominating a successor does not discard a valid proposal.
+    assert!(client.pending_upgrade().is_some());
+    env.ledger().with_mut(|l| l.sequence_number = 106);
+    env.mock_auths(&[]);
+    assert!(client.try_accept_admin().is_err());
+    assert!(client.pending_upgrade().is_some());
+    env.mock_auths(&[MockAuth {
+        address: &successor,
+        invoke: &MockAuthInvoke {
+            contract: &id,
+            fn_name: "accept_admin",
+            args: ().into_val(&env),
+            sub_invokes: &[],
+        },
+    }]);
+    client.accept_admin();
+    assert_eq!(
+        env.events().all(),
+        [UpgradeCancelled {
+            wasm_hash: hash.clone()
+        }
+        .to_xdr(&env, &id)]
+    );
+    assert!(client.is_paused());
+    assert_eq!(client.pending_admin(), None);
+    assert_eq!(client.pending_upgrade(), None);
+    env.mock_all_auths();
+    assert_eq!(
+        client.try_execute_upgrade(&hash),
+        Err(Ok(RegistryError::NoPendingUpgrade))
+    );
+    client.propose_upgrade(&hash, &5);
+    assert_eq!(client.pending_upgrade().unwrap().ready_at_ledger, 111);
+    assert_eq!(
+        client.try_execute_upgrade(&hash),
+        Err(Ok(RegistryError::UpgradeNotReady))
+    );
+}
