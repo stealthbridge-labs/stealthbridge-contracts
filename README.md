@@ -120,3 +120,7 @@ The customer app's signed-message login is not a Soroban smart-account deploymen
 [Frontend](https://github.com/stealthbridge-labs/stealthbridge-frontend) · [Backend](https://github.com/stealthbridge-labs/stealthbridge-backend) · [SDK](https://github.com/stealthbridge-labs/stealthbridge-sdk) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
 **Public governance is deployed on Testnet. Private money movement is not.**
+
+## Open source
+
+StealthBridge is available under the [MIT license](LICENSE). Third-party dependencies retain their own licenses. Contributions should include meaningful tests and preserve customer privacy and disabled financial execution gates.

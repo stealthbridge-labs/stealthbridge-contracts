@@ -5,6 +5,7 @@ resolver = "2"
 [workspace.package]
 edition = "2021"
 publish = false
+license = "MIT"
 
 [workspace.dependencies]
 # Major version must match the target Stellar protocol. Reconfirm before deploy.
