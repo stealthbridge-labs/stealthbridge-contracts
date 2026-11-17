@@ -92,6 +92,10 @@ Restoration requires a separately reviewed on-chain plan, signing and explicit a
 
 The additional offline tests use injected RPC/fetch APIs and synthetic LedgerEntry XDR, including a mocked local HTTP request that checks method, path, ordered seven-key form, redirect policy, timeout signal and the absence of other network/API calls. Existing audit and verifier tests remain intact.
 
+## Offline operator recovery reconciliation
+
+`npm run --silent review:recovery -- --audit-json /absolute/operator-evidence/public-audit.json --core-json /absolute/operator-evidence/core-review.json` reconciles the two existing report schemas without network access or file writes. Keep inputs outside the repository. See the [operator procedure and trust limits](../../docs/SMART-ACCOUNT-OFFLINE-RECOVERY-REVIEW.md) for capture requirements, strict schema/pin/identity/TTL checks, snapshot alignment, results and adversarial fixtures. Missing Core evidence or conflicting observations block review. The source stays `operator_owned`; Core network trust and current freshness remain unestablished. Every outcome exits 1 and requires human review. No payload authorizes account creation, vaults, privacy, payouts or execution.
+
 ## Not a customer wallet deployment
 
 This utility does **not** read `operator_local` credentials, create accounts, register passkeys, test cross-device recovery, extend TTL, sign authorization entries or broadcast transactions. It never establishes smart-account security, user key recovery, custody, issuer support, private transfers or real-money payment eligibility.

@@ -11,7 +11,8 @@
     "test": "node --test",
     "verify:testnet": "node src/preflight.mjs",
     "audit:testnet": "node src/audit.mjs",
-    "review:archival": "node src/core-archival-review.mjs"
+    "review:archival": "node src/core-archival-review.mjs",
+    "review:recovery": "node src/recovery-evidence.mjs"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "16.4.1",

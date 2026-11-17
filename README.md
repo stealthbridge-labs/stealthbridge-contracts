@@ -79,6 +79,10 @@ The audit reports network/ledger evidence, hashes and separate code/instance TTL
 
 [Smart-account release plan](docs/CUSTOMER-SMART-ACCOUNT-RELEASE-PLAN.md) · [November 2 archived-TTL evidence and no-broadcast review](docs/SMART-ACCOUNT-ARCHIVAL-REVIEW-2026-11-02.md) · [Read-only preflight instructions](tools/smart-account-preflight/README.md) · [Read-only Core archival cross-check](tools/smart-account-preflight/README.md#archival-state-cross-check-testnet-read-only) · [Wallet/privacy integration](docs/WALLET-SMART-ACCOUNT-AND-PRIVACY-INTEGRATION.md).
 
+### Operator-only offline recovery review
+
+Reconcile an existing public seven-entry audit JSON and operator-owned Core review JSON with `review:recovery`. Save both files outside the repository and follow the [offline operator procedure](docs/SMART-ACCOUNT-OFFLINE-RECOVERY-REVIEW.md). The command uses no network, secrets, signing or transaction APIs and writes only JSON to stdout. It blocks missing or unaligned Core evidence, invalid identity/hash/TTL claims and conflicting findings; summaries grant no authority. Core network identity remains independently unverified and the source remains `operator_owned`. A coherent historical pair still requires operator review, always exits 1, and never enables account creation, vaults, privacy, payouts or financial execution. Prior snapshots cannot establish current readiness.
+
 ### Still unverified before a customer wallet
 
 WebAuthn relying-party/domain binding; actual passkey enrollment and second-device recovery; signer/session limits; anti-replay; delegated authorization; relayer policies; key loss and custody model; authorized TTL restoration; real asset transfer simulation; independently reviewed on-chain deployment.

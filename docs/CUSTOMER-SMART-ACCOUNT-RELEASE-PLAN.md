@@ -88,3 +88,7 @@ customer funds or customer wallet deployment claims.
 
 This does NOT satisfy the required full account deployment, WebAuthn origin,
 recovery and signer-policy audits. The integration remains Testnet-only.
+
+## Operator-only offline recovery evidence
+
+The [offline recovery procedure](SMART-ACCOUNT-OFFLINE-RECOVERY-REVIEW.md) reconciles paired public audit and operator-owned Core review JSON saved outside this repository. Missing Core evidence, unaligned snapshots, invalid hashes/IDs/TTL or conflicting states block review. Core network trust remains independently unverified; historical JSON cannot establish present readiness. Every result remains operator-only, exits 1 and grants no account creation, vault, privacy, payout or financial execution authority. Recovery maintenance and any account pilot require separate review and explicit authorization.

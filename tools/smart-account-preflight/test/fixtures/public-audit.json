@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "network": {
+    "name": "Stellar Testnet",
+    "rpcUrl": "https://soroban-testnet.stellar.org",
+    "expectedPassphrase": "Test SDF Network ; September 2015",
+    "verified": true
+  },
+  "observedLedger": 5523276,
+  "ledgerSpan": {
+    "first": 5523276,
+    "last": 5523276
+  },
+  "observationVerified": true,
+  "policy": {
+    "reviewTtlLedgers": 120960,
+    "strictVerifierMarginLedgers": 720,
+    "maxLedgerSpan": 12,
+    "maxLedgerAgeSeconds": 120
+  },
+  "entries": [
+    {
+      "name": "account_code",
+      "kind": "code",
+      "expectedWasmHash": "c514d35ea67eaea9bfc1fb3327854c0c06111bc1ddebd4fe217c504c1004b9e1",
+      "observedLedger": 5523276,
+      "liveUntilLedgerSeq": null,
+      "ttlRemainingLedgers": null,
+      "observedWasmHash": "c514d35ea67eaea9bfc1fb3327854c0c06111bc1ddebd4fe217c504c1004b9e1",
+      "computedWasmSha256": "c514d35ea67eaea9bfc1fb3327854c0c06111bc1ddebd4fe217c504c1004b9e1",
+      "wasmSize": 48273,
+      "status": "unavailable_live_entry",
+      "reason": "rpc_zero_ttl_no_verified_live_entry"
+    },
+    {
+      "name": "webauthn_instance",
+      "kind": "instance",
+      "contractId": "CC7EKIHQP3TN4CARQDND6CEOY2UXLWWC2X5GHTD5NLAT7BG5GPZIOM3F",
+      "expectedWasmHash": "e63a030d0f1a1481e36059a4837c433083b33e704c1f9625b7314795b6d72b76",
+      "observedLedger": 5523276,
+      "liveUntilLedgerSeq": 5723276,
+      "ttlRemainingLedgers": 200000,
+      "observedWasmHash": "e63a030d0f1a1481e36059a4837c433083b33e704c1f9625b7314795b6d72b76",
+      "status": "healthy",
+      "reason": "identity_and_live_ttl_observed"
+    },
+    {
+      "name": "webauthn_code",
+      "kind": "code",
+      "expectedWasmHash": "e63a030d0f1a1481e36059a4837c433083b33e704c1f9625b7314795b6d72b76",
+      "observedLedger": 5523276,
+      "liveUntilLedgerSeq": 5723276,
+      "ttlRemainingLedgers": 200000,
+      "observedWasmHash": "e63a030d0f1a1481e36059a4837c433083b33e704c1f9625b7314795b6d72b76",
+      "computedWasmSha256": "e63a030d0f1a1481e36059a4837c433083b33e704c1f9625b7314795b6d72b76",
+      "wasmSize": 24000,
+      "status": "healthy",
+      "reason": "identity_and_live_ttl_observed"
+    },
+    {
+      "name": "threshold_instance",
+      "kind": "instance",
+      "contractId": "CAZ2WFUDXGX265LOEARFEOYYUL6F4BYWXZLGUAWZNJY3MRFPNLSZVS4S",
+      "expectedWasmHash": "f72a11de6e2d5d2495d98fe61e04cd13544e64156a5a3be83ef8c2e403d14a94",
+      "observedLedger": 5523276,
+      "liveUntilLedgerSeq": null,
+      "ttlRemainingLedgers": null,
+      "observedWasmHash": "f72a11de6e2d5d2495d98fe61e04cd13544e64156a5a3be83ef8c2e403d14a94",
+      "status": "unavailable_live_entry",
+      "reason": "rpc_zero_ttl_no_verified_live_entry"
+    },
+    {
+      "name": "threshold_code",
+      "kind": "code",
+      "expectedWasmHash": "f72a11de6e2d5d2495d98fe61e04cd13544e64156a5a3be83ef8c2e403d14a94",
+      "observedLedger": 5523276,
+      "liveUntilLedgerSeq": null,
+      "ttlRemainingLedgers": null,
+      "observedWasmHash": "f72a11de6e2d5d2495d98fe61e04cd13544e64156a5a3be83ef8c2e403d14a94",
+      "computedWasmSha256": "f72a11de6e2d5d2495d98fe61e04cd13544e64156a5a3be83ef8c2e403d14a94",
+      "wasmSize": 24000,
+      "status": "unavailable_live_entry",
+      "reason": "rpc_zero_ttl_no_verified_live_entry"
+    },
+    {
+      "name": "spendingLimit_instance",
+      "kind": "instance",
+      "contractId": "CC3CEYQAP6NPNFIYSWL5MVZRCPJZGWX4XO7WDEJOUVGO2FZX5OONYPA5",
+      "expectedWasmHash": "9bc17db0a804d6c82231a268c43bac1413650ea92cac0022e0d0a3b66ddc8189",
+      "observedLedger": 5523276,
+      "liveUntilLedgerSeq": null,
+      "ttlRemainingLedgers": null,
+      "observedWasmHash": "9bc17db0a804d6c82231a268c43bac1413650ea92cac0022e0d0a3b66ddc8189",
+      "status": "unavailable_live_entry",
+      "reason": "rpc_zero_ttl_no_verified_live_entry"
+    },
+    {
+      "name": "spendingLimit_code",
+      "kind": "code",
+      "expectedWasmHash": "9bc17db0a804d6c82231a268c43bac1413650ea92cac0022e0d0a3b66ddc8189",
+      "observedLedger": 5523276,
+      "liveUntilLedgerSeq": null,
+      "ttlRemainingLedgers": null,
+      "observedWasmHash": "9bc17db0a804d6c82231a268c43bac1413650ea92cac0022e0d0a3b66ddc8189",
+      "computedWasmSha256": "9bc17db0a804d6c82231a268c43bac1413650ea92cac0022e0d0a3b66ddc8189",
+      "wasmSize": 24000,
+      "status": "unavailable_live_entry",
+      "reason": "rpc_zero_ttl_no_verified_live_entry"
+    }
+  ],
+  "errors": [],
+  "canDeployCustomerWallet": false,
+  "customerWalletCreated": false,
+  "credentialRecoveryVerified": false,
+  "verifiedFinancialExecution": false,
+  "broadcastTransactions": 0,
+  "transactionsBuilt": 0,
+  "summary": {
+    "verified": false,
+    "minimumTtlRemainingLedgers": 200000,
+    "minimumTtlScope": "observed_entries_with_valid_ttl_only",
+    "actions": [
+      "investigate_restore_or_republish"
+    ]
+  }
+}
