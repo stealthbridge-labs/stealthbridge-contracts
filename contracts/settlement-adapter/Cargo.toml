@@ -1,0 +1,32 @@
+[package]
+name = "stealthbridge-settlement-adapter"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "MIT"
+description = "Source-only Soroban 27.0.6 governance-gated settlement adapter with replay, expiry, exact-asset, privacy-proof, and emergency controls"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+soroban-sdk = "=27.0.6"
+
+[dev-dependencies]
+soroban-sdk = { version = "=27.0.6", features = ["testutils"] }
+stealthbridge-corridor-registry = { path = "../corridor-registry" }
+stealthbridge-policy-registry = { path = "../policy-registry" }
+stealthbridge-governance-gate = { path = "../governance-gate" }
+
+[workspace]
+resolver = "2"
+
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true

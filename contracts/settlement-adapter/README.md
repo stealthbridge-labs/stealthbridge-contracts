@@ -1,7 +1,5 @@
-# Settlement adapter — not implemented
+# Settlement adapter — Source-only governance-gated adapter crate
 
-A **future separately reviewed** Soroban settlement adapter could connect verified asset issuance, privacy verification, authorized signing, exact fees, on-chain finality and independent payout reconciliation. **There is no executable, audited or deployed StealthBridge settlement adapter in this directory.**
+Implements a source-only Soroban `27.0.6` contract (`stealthbridge-settlement-adapter`) connecting StealthBridge's cross-registry `GovernanceGate`, explicit customer authorization (`payer.require_auth()`), replay protection (`Receipt(payer, intent_sha256)`), expiry enforcement (`expires_at_ledger`), exact-transfer SEP-41 delta checks, fail-closed quote and privacy-proof gates, and emergency pause/admin controls.
 
-Three public governance contracts deployed in October 2026 are **not** custody or asset movement contracts. No customer funds, FX quote, fee transfer, payout or confidential settlement can be executed.
-
-Before any implementation: choose a verified issuer/legal corridor, establish asset identity and redemption support, independently reproduce confidentiality, model idempotency/replay and smart-account policies, and complete an external security/operational review. See [privacy release gates](../../docs/PRIVACY-RELEASE-GATES.md) and [root implementation overview](../../README.md).
+**Deployment boundary:** Neither this crate nor the fee vault is deployed to Testnet (`deployments/testnet/manifest.json` remains `"status": "not-deployed"`). Existing October 2026 deployed contracts (`corridor-registry`, `policy-registry`, `governance-gate`) remain unchanged.
