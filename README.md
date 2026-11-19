@@ -125,6 +125,12 @@ The customer app's signed-message login is not a Soroban smart-account deploymen
 
 **Public governance is deployed on Testnet. Private money movement is not.**
 
+## Protocol 30, privacy rails, and release readiness (Milestones 3–6)
+
+- **Protocol 30 & Smart Account Compatibility:** Workspace dependencies and recipient validation paths support `G...`, `M...`, `C...`, and CAP-84 `W...` muxed contract addresses via strict StrKey parsing; upstream Smart Account Kit artifact observations remain pinned read-only.
+- **Privacy Rail Evaluations (`tools/privacy-rail-poc`):** Reproducible Testnet evaluation modules for both Nethermind *Stellar Private Payments* (shielded commitment tree / nullifier model) and OpenZeppelin *Confidential Tokens* (Pedersen / TwElGamal / Sigma-style amount proofs with auditor & issuer controls). Neither rail is production-verified for customer funds or live settlement.
+- **Controlled Testnet Settlement Adapter (`contracts/settlement-adapter`):** Source-level contract workspace defining fail-closed corridor, policy, and authorization boundaries alongside the cross-repo Testnet evidence recorded in [MILESTONE-6-RELEASE-READINESS-REPORT.md](docs/MILESTONE-6-RELEASE-READINESS-REPORT.md).
+
 ## Open source
 
 StealthBridge is available under the [MIT license](LICENSE). Third-party dependencies retain their own licenses. Contributions should include meaningful tests and preserve customer privacy and disabled financial execution gates.
