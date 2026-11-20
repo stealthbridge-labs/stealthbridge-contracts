@@ -1,0 +1,29 @@
+name: Bug report (Contracts / ZK / Smart Accounts)
+description: Report a reproducible Soroban, WASM, smart-account preflight, or privacy-evaluation bug.
+title: "[Contracts Bug] "
+labels: ["bug", "soroban"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Stellar Testnet research & engineering only.** Never post deployer secret keys, operator credentials, spend notes, or zero-knowledge witnesses. For exploits, follow `SECURITY.md`.
+  - type: input
+    id: component
+    attributes:
+      label: Affected contract or tool
+      placeholder: "e.g., contracts/settlement-adapter, tools/privacy-rail-poc, tools/smart-account-preflight"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Exact reproduction steps & Testnet context
+      description: Include `cargo test` / `stellar` commands, commit SHA, and Testnet contract/tx IDs if applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs observed behavior
+    validations:
+      required: true

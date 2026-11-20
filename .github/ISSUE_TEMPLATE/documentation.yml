@@ -1,0 +1,17 @@
+name: Documentation & Contributor Guide Improvement
+description: Improve Soroban docs, ADRs, privacy disclosures, deployment runbooks, or contributor onboarding.
+title: "[Docs] "
+labels: ["documentation"]
+body:
+  - type: textarea
+    id: target
+    attributes:
+      label: Documentation gap or inaccurate section
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Suggested update & verification against code
+    validations:
+      required: true

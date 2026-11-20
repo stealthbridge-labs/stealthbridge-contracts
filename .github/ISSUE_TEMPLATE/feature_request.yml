@@ -1,0 +1,28 @@
+name: Protocol / Contract Improvement Proposal
+description: Propose Soroban contract enhancements, ZK verifier work, Smart Account capabilities, or deployment tooling.
+title: "[Contracts Proposal] "
+labels: ["enhancement", "soroban"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Distinguish source code from audited/deployed Testnet state. Significant changes to funds, ZK verification, or admin recovery require an Architecture Decision Record (`docs/adr/`).
+  - type: textarea
+    id: summary
+    attributes:
+      label: Problem statement & protocol goal
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria & adversarial tests required
+      description: List unit, invariant, WASM, and live Testnet verification gates required.
+    validations:
+      required: true
+  - type: textarea
+    id: threat_model
+    attributes:
+      label: Authorization, replay, TTL, and privacy boundaries
+    validations:
+      required: true
