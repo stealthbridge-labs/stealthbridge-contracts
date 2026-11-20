@@ -45,6 +45,7 @@ jobs:
       - name: Enforce issuer privacy and redemption remain independently unverified
         run: python3 scripts/check_issuer_capabilities.py
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - run: python3 scripts/validate_protocol_v3.py
       - run: python3 scripts/artifacts.py
       - name: Independently verify every Soroban WASM and ABI digest
         run: python3 scripts/verify_artifacts.py
@@ -97,3 +98,24 @@ jobs:
         run: npm test
       # Live RPC verification stays a separate, operator-invoked, read-only
       # preflight. It must never auto-deploy or silently extend TTL.
+
+  protocol-contracts:
+    name: Protocol execution, ZK & smart-account contracts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32v1-none
+          components: rustfmt, clippy
+      - name: Test, lint, and compile operational Testnet protocol crates
+        run: |
+          for dir in contracts/settlement-adapter contracts/fee-vault contracts/privacy-verifier contracts/smart-account; do
+            echo "=== Checking $dir ==="
+            cargo fmt --manifest-path "$dir/Cargo.toml" -- --check
+            cargo test --manifest-path "$dir/Cargo.toml"
+            cargo clippy --manifest-path "$dir/Cargo.toml" --all-targets -- -D warnings
+            cargo build --manifest-path "$dir/Cargo.toml" --release --target wasm32v1-none
+          done
+          cargo test --manifest-path tools/privacy-rail-poc/Cargo.toml
+      - run: python3 scripts/validate_protocol_v3.py

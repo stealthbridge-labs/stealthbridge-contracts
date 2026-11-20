@@ -36,7 +36,10 @@ impl TaxingToken {
     }
 
     pub fn balance(env: Env, id: Address) -> i128 {
-        env.storage().persistent().get(&TaxKey::Bal(id)).unwrap_or(0)
+        env.storage()
+            .persistent()
+            .get(&TaxKey::Bal(id))
+            .unwrap_or(0)
     }
 
     pub fn transfer(env: Env, from: Address, to: Address, amount: i128) {

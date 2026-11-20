@@ -1,5 +1,20 @@
 # deployments/testnet
 
+## Protocol Execution & Smart Account Release (v3 — 20 November 2026)
+
+All four operational Soroban protocol contracts have now been compiled to `wasm32v1-none`,
+deployed to **Stellar Testnet** (`Test SDF Network ; September 2015`), read back via
+`stellar contract fetch` with exact SHA-256 parity, initialized, and exercised live
+(including an on-chain BN254 Groth16 `verify_and_spend` pairing check at ledger `5836133`).
+See [protocol-deployment.v3.json](protocol-deployment.v3.json) and validate offline with:
+
+```sh
+python3 scripts/validate_protocol_v3.py
+```
+
+Mainnet, fiat payouts, live FX, and independent external security audits remain explicitly
+**disabled / false** (`mainnet_enabled: false`, `fiat_payouts_enabled: false`).
+
 ## Current Testnet reality (17 October 2026)
 
 **Three public governance Soroban contracts have now been deployed** and their
