@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::too_many_arguments)]
 //! StealthBridge BN254 Groth16 PrivacyVerifier and NullifierRegistry contract.
 //!
 //! Uses Soroban Protocol 25+ native `env.crypto().bn254().pairing_check` host
