@@ -131,6 +131,11 @@ The customer app's signed-message login is not a Soroban smart-account deploymen
 - **Privacy Rail Evaluations (`tools/privacy-rail-poc`):** Reproducible Testnet evaluation modules for both Nethermind *Stellar Private Payments* (shielded commitment tree / nullifier model) and OpenZeppelin *Confidential Tokens* (Pedersen / TwElGamal / Sigma-style amount proofs with auditor & issuer controls). Neither rail is production-verified for customer funds or live settlement.
 - **Controlled Testnet Settlement Adapter (`contracts/settlement-adapter`):** Source-level contract workspace defining fail-closed corridor, policy, and authorization boundaries alongside the cross-repo Testnet evidence recorded in [MILESTONE-6-RELEASE-READINESS-REPORT.md](docs/MILESTONE-6-RELEASE-READINESS-REPORT.md).
 
-## Open source
+## Open source & community
 
 StealthBridge is available under the [MIT license](LICENSE). Third-party dependencies retain their own licenses. Contributions should include meaningful tests and preserve customer privacy and disabled financial execution gates.
+
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [MIT License](LICENSE)
