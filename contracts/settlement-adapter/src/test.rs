@@ -246,3 +246,22 @@ fn rejects_fee_on_transfer_asset_shortfall() {
         Err(Ok(AdapterError::AssetTransferMismatch))
     ));
 }
+
+/// Audit H-7: a caller-supplied `rail_proof_verified = true` must not unlock
+/// a shielded rail mode, because nothing on-chain verified a proof.
+#[test]
+fn caller_asserted_privacy_proof_flag_is_not_trusted() {
+    let s = setup();
+    for mode in [
+        PrivacyRailMode::PrivatePaymentsPool,
+        PrivacyRailMode::ConfidentialSep41Token,
+    ] {
+        let mut intent = sample_intent(&s);
+        intent.rail_mode = mode;
+        intent.rail_proof_verified = true;
+        assert_eq!(
+            s.adapter.try_authorize_and_settle(&intent),
+            Err(Ok(AdapterError::PrivacyProofUnverified))
+        );
+    }
+}

@@ -1,3 +1,15 @@
+//! PAIRING SMOKE TEST ONLY. NOT A ZERO-KNOWLEDGE PROOF SYSTEM.
+//!
+//! This generator derives the Groth16 toxic waste (alpha, beta, gamma, delta,
+//! IC scalars) from public SHA-256 labels and has no circuit. Anyone can
+//! therefore compute a "valid" proof for ANY public inputs against the
+//! verification key it prints (audit finding C-2). It exists only to exercise
+//! the Soroban BN254 `pairing_check` host function. A key produced here must
+//! never be registered on a verifier that guards value or identity, and its
+//! Testnet use proves only that the pairing host function works. Real proofs
+//! require an upstream circuit with a proper setup (see docs/adr in the
+//! workspace and integrations/stellar-private-payments).
+
 use ark_bn254::{Fq2, Fr, G1Affine, G1Projective, G2Affine, G2Projective};
 use ark_ec::{AffineRepr, CurveGroup};
 use ark_ff::{BigInteger, Field, PrimeField};
