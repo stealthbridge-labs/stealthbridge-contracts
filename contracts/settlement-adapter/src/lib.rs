@@ -1,7 +1,10 @@
 #![no_std]
 //! Governance-gated Soroban settlement adapter source contract.
-//! Source-only artifact: not deployed to Testnet and does not claim live FX,
-//! custody licensing, or verified shielded privacy rails on deployed addresses.
+//! Testnet only. A build of an earlier revision is deployed (see
+//! deployments/testnet/protocol-deployment.v3.json); that instance is wired to a
+//! GovernanceGate without `public_flags_allow_config` and therefore always
+//! returns `GovernanceBlocked`. Makes no claim of live FX, custody licensing or
+//! shielded privacy: non-transparent rail modes are rejected.
 
 use soroban_sdk::{
     contract, contracterror, contractevent, contractimpl, contracttype, token, Address, BytesN,
@@ -237,10 +240,11 @@ impl SettlementAdapter {
             return Err(AdapterError::QuoteUnavailable);
         }
 
-        // Shielded modes cannot masquerade as transparent execution without verified proof.
-        if intent.rail_mode != PrivacyRailMode::TransparentTestnetOnly
-            && !intent.rail_proof_verified
-        {
+        // Shielded modes are refused outright. `rail_proof_verified` is a value
+        // the caller supplies, so it cannot attest anything; this adapter has no
+        // on-chain verifier integration yet (audit H-7). Accepting the flag would
+        // let a transparent token transfer be recorded as a private one.
+        if intent.rail_mode != PrivacyRailMode::TransparentTestnetOnly {
             return Err(AdapterError::PrivacyProofUnverified);
         }
 
