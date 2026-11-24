@@ -14,7 +14,8 @@ use soroban_sdk::{
     auth::{Context, ContractContext, CustomAccountInterface},
     contract, contracterror, contractevent, contractimpl, contracttype,
     crypto::Hash,
-    Bytes, BytesN, Env, Map, Symbol, TryFromVal, Vec,
+    xdr::ToXdr,
+    Bytes, BytesN, Env, Map, Symbol, TryFromVal, Val, Vec,
 };
 
 const TTL_THRESHOLD: u32 = 17_280;
@@ -90,6 +91,7 @@ enum DataKey {
     RpDomainSha256,
     PendingRecovery,
     Paused,
+    RecoveryNonce,
 }
 
 #[contractevent(topics = ["smart_account", "initialized"])]
@@ -251,9 +253,20 @@ fn verify_signer_signature(
             if (flags & 0x01) == 0 {
                 return Err(AccountError::InvalidWebAuthn);
             }
-            // ClientDataJSON must contain base64url(payload) as challenge.
-            let encoded_challenge = base64url_encode_32(env, &payload.to_array());
-            if !bytes_contains(client_data_json, &encoded_challenge) {
+            // ClientDataJSON must be an assertion (`webauthn.get`, never a
+            // registration) whose `challenge` member is exactly
+            // base64url(payload). A bare substring match would accept the
+            // payload appearing anywhere, e.g. inside `origin`.
+            if !bytes_contains(
+                client_data_json,
+                &Bytes::from_slice(env, br#""type":"webauthn.get""#),
+            ) {
+                return Err(AccountError::InvalidWebAuthn);
+            }
+            let mut challenge_field = Bytes::from_slice(env, br#""challenge":""#);
+            challenge_field.append(&base64url_encode_32(env, &payload.to_array()));
+            challenge_field.push_back(b'"');
+            if !bytes_contains(client_data_json, &challenge_field) {
                 return Err(AccountError::InvalidWebAuthn);
             }
             let client_hash: BytesN<32> = env.crypto().sha256(client_data_json).into();
@@ -297,7 +310,6 @@ fn check_session_context_and_spend(
     let self_addr = env.current_contract_address();
     let transfer_sym = Symbol::new(env, "transfer");
     let approve_sym = Symbol::new(env, "approve");
-    let spend_sym = Symbol::new(env, "execute_settlement");
 
     let mut tx_total: i128 = 0;
     for ctx in auth_contexts.iter() {
@@ -323,9 +335,10 @@ fn check_session_context_and_spend(
             tx_total = tx_total
                 .checked_add(amt)
                 .ok_or(AccountError::SpendingLimitExceeded)?;
-        } else if fn_name == spend_sym {
-            // Settlement adapter intent amount checked conservatively if present or cap enforced by args.
         } else {
+            // Any other function is out of scope for a session key. (Audit H-2:
+            // the former `execute_settlement` allowance was unmetered and did
+            // not match the adapter's real entry point.)
             return Err(AccountError::SessionRestrictedContext);
         }
     }
@@ -350,20 +363,84 @@ fn check_session_context_and_spend(
     Ok(())
 }
 
+/// While paused, the account may only authorize calls on itself that restore
+/// control: `set_paused(false)` or `cancel_recovery()`. Without this, pausing
+/// would be irreversible because unpausing itself requires `__check_auth`
+/// (audit C-3).
+fn only_pause_recovery_calls(env: &Env, auth_contexts: &Vec<Context>) -> bool {
+    if auth_contexts.is_empty() {
+        return false;
+    }
+    let self_addr = env.current_contract_address();
+    let set_paused = Symbol::new(env, "set_paused");
+    let cancel = Symbol::new(env, "cancel_recovery");
+    for ctx in auth_contexts.iter() {
+        let Context::Contract(ContractContext {
+            contract,
+            fn_name,
+            args,
+        }) = ctx
+        else {
+            return false;
+        };
+        if contract != self_addr {
+            return false;
+        }
+        if fn_name == set_paused {
+            let unpause = args
+                .get(0)
+                .and_then(|v: Val| bool::try_from_val(env, &v).ok())
+                == Some(false);
+            if args.len() != 1 || !unpause {
+                return false;
+            }
+        } else if fn_name != cancel {
+            return false;
+        }
+    }
+    true
+}
+
+fn recovery_nonce(env: &Env) -> u32 {
+    env.storage()
+        .instance()
+        .get(&DataKey::RecoveryNonce)
+        .unwrap_or(0)
+}
+
+fn bump_recovery_nonce(env: &Env) {
+    let next = recovery_nonce(env).wrapping_add(1);
+    env.storage().instance().set(&DataKey::RecoveryNonce, &next);
+}
+
+/// Guardian recovery challenge, domain-separated by network, this account's
+/// address and a nonce that changes on every propose/cancel/execute, so a
+/// guardian signature cannot be replayed on another account, another network
+/// or after cancellation (audit H-2).
+fn recovery_challenge_digest(env: &Env, new_owner_id: &BytesN<32>, delay_ledgers: u32) -> Hash<32> {
+    let mut msg = Bytes::from_slice(env, b"stealthbridge-recovery-v2:");
+    msg.extend_from_array(&env.ledger().network_id().to_array());
+    msg.append(&env.current_contract_address().to_xdr(env));
+    msg.extend_from_array(&recovery_nonce(env).to_be_bytes());
+    msg.extend_from_array(&new_owner_id.to_array());
+    msg.extend_from_array(&delay_ledgers.to_be_bytes());
+    env.crypto().sha256(&msg)
+}
+
 #[contract]
 pub struct StealthBridgeSmartAccount;
 
 #[contractimpl]
 impl StealthBridgeSmartAccount {
-    pub fn initialize(
+    /// Signers are bound atomically at deployment (audit H-1). There is no
+    /// separate initializer for a third party to front-run between deploy and
+    /// configuration.
+    pub fn __constructor(
         env: Env,
         owner_key: SignerKey,
         rp_domain_sha256: BytesN<32>,
         guardian_key: Option<SignerKey>,
-    ) -> Result<BytesN<32>, AccountError> {
-        if env.storage().instance().has(&DataKey::Initialized) {
-            return Err(AccountError::AlreadyInitialized);
-        }
+    ) -> Result<(), AccountError> {
         let owner_id = signer_id_for_key(&env, &owner_key);
         let mut signers = Map::new(&env);
         let current = env.ledger().sequence();
@@ -413,11 +490,27 @@ impl StealthBridgeSmartAccount {
         extend_instance(&env);
 
         AccountInitialized {
-            owner_id: owner_id.clone(),
+            owner_id,
             threshold: 1,
         }
         .publish(&env);
-        Ok(owner_id)
+        Ok(())
+    }
+
+    /// Current recovery nonce, bound into the guardian challenge.
+    pub fn get_recovery_nonce(env: Env) -> u32 {
+        recovery_nonce(&env)
+    }
+
+    /// The exact 32-byte digest a guardian must sign to propose `new_owner_key`
+    /// with `delay_ledgers`. Valid only until the next propose/cancel/execute.
+    pub fn recovery_challenge(
+        env: Env,
+        new_owner_key: SignerKey,
+        delay_ledgers: u32,
+    ) -> BytesN<32> {
+        let id = signer_id_for_key(&env, &new_owner_key);
+        recovery_challenge_digest(&env, &id, delay_ledgers).into()
     }
 
     pub fn get_signer(env: Env, signer_id: BytesN<32>) -> Option<SignerPolicy> {
@@ -600,16 +693,14 @@ impl StealthBridgeSmartAccount {
             return Err(AccountError::GuardianRequired);
         }
         let new_owner_id = signer_id_for_key(&env, &new_owner_key);
-        let mut domain = Bytes::from_slice(&env, b"stealthbridge-recovery-v1:");
-        domain.extend_from_array(&new_owner_id.to_array());
-        domain.extend_from_array(&delay_ledgers.to_be_bytes());
-        let challenge = env.crypto().sha256(&domain);
+        let challenge = recovery_challenge_digest(&env, &new_owner_id, delay_ledgers);
         let rp_sha: BytesN<32> = env
             .storage()
             .instance()
             .get(&DataKey::RpDomainSha256)
             .unwrap_or_else(|| BytesN::from_array(&env, &[0u8; 32]));
         verify_signer_signature(&env, &guardian, &challenge, &guardian_sig, &rp_sha)?;
+        bump_recovery_nonce(&env);
 
         let ready_at = current
             .checked_add(delay_ledgers)
@@ -639,6 +730,7 @@ impl StealthBridgeSmartAccount {
     pub fn cancel_recovery(env: Env) -> Result<(), AccountError> {
         env.current_contract_address().require_auth();
         env.storage().instance().remove(&DataKey::PendingRecovery);
+        bump_recovery_nonce(&env);
         extend_instance(&env);
         Ok(())
     }
@@ -661,11 +753,12 @@ impl StealthBridgeSmartAccount {
             .instance()
             .get(&DataKey::Signers)
             .ok_or(AccountError::NotInitialized)?;
-        // Deactivate old owners so a compromised old key cannot keep access after recovery.
+        // Deactivate old owners AND session keys: recovery assumes the old
+        // device set is compromised, so delegated sessions must not survive it.
         let keys = signers.keys();
         for k in keys.iter() {
             if let Some(mut p) = signers.get(k.clone()) {
-                if p.role == SignerRole::Owner {
+                if p.role == SignerRole::Owner || p.role == SignerRole::Session {
                     p.active = false;
                     signers.set(k, p);
                 }
@@ -689,6 +782,7 @@ impl StealthBridgeSmartAccount {
         env.storage().instance().set(&DataKey::Signers, &signers);
         env.storage().instance().set(&DataKey::Threshold, &1u32);
         env.storage().instance().remove(&DataKey::PendingRecovery);
+        bump_recovery_nonce(&env);
         extend_instance(&env);
         RecoveryExecuted {
             new_owner_id: proposal.new_owner_id.clone(),
@@ -712,7 +806,8 @@ impl CustomAccountInterface for StealthBridgeSmartAccount {
         if !env.storage().instance().has(&DataKey::Initialized) {
             return Err(AccountError::NotInitialized);
         }
-        if Self::is_paused(env.clone()) {
+        let paused = Self::is_paused(env.clone());
+        if paused && !only_pause_recovery_calls(&env, &auth_contexts) {
             return Err(AccountError::Paused);
         }
         if signatures.is_empty() {
@@ -755,6 +850,9 @@ impl CustomAccountInterface for StealthBridgeSmartAccount {
                     owner_approvals += 1;
                 }
                 SignerRole::Session => {
+                    if paused {
+                        return Err(AccountError::Paused);
+                    }
                     check_session_context_and_spend(&env, &mut policy, &auth_contexts, current)?;
                     signers.set(sid, policy);
                     session_approved = true;
