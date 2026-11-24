@@ -113,10 +113,9 @@ fn groth16_verifier_accepts_valid_proof_and_rejects_replay_tamper_expiry_and_wro
     env.mock_all_auths();
     env.ledger().with_mut(|l| l.sequence_number = 100);
 
-    let contract_id = env.register(PrivacyVerifier, ());
-    let client = PrivacyVerifierClient::new(&env, &contract_id);
     let admin = Address::generate(&env);
-    client.initialize(&admin);
+    let contract_id = env.register(PrivacyVerifier, (admin.clone(),));
+    let client = PrivacyVerifierClient::new(&env, &contract_id);
 
     let (alpha, beta, gamma, delta, gamma_abc, vk) = setup_groth16(&env, 3);
     client.register_verification_key(&1, &1, &vk);
@@ -202,4 +201,91 @@ fn groth16_verifier_accepts_valid_proof_and_rejects_replay_tamper_expiry_and_wro
         client.try_verify_and_spend(&1, &1, &root, &n2, &scope, &p2_inputs, &p2),
         Err(Ok(VerifierError::UnknownOrExpiredRoot))
     );
+}
+
+/// BN254 scalar field modulus r, big-endian.
+const FR_MODULUS_BE: [u8; 32] = [
+    0x30, 0x64, 0x4e, 0x72, 0xe1, 0x31, 0xa0, 0x29, 0xb8, 0x50, 0x45, 0xb6, 0x81, 0x81, 0x58, 0x5d,
+    0x28, 0x33, 0xe8, 0x48, 0x79, 0xb9, 0x70, 0x91, 0x43, 0xe1, 0xf5, 0x93, 0xf0, 0x00, 0x00, 0x01,
+];
+
+/// Big-endian 256-bit addition `a + r` (caller guarantees no overflow).
+fn add_modulus(a: &[u8; 32]) -> [u8; 32] {
+    let mut out = [0u8; 32];
+    let mut carry = 0u16;
+    for i in (0..32).rev() {
+        let s = a[i] as u16 + FR_MODULUS_BE[i] as u16 + carry;
+        out[i] = (s & 0xff) as u8;
+        carry = s >> 8;
+    }
+    assert_eq!(carry, 0, "test value must not overflow 256 bits");
+    out
+}
+
+/// Regression for audit finding C-1: a nullifier `N` and its non-canonical
+/// alias `N + r` are the same field element, so without a canonical-encoding
+/// check one proof could be spent once per alias.
+#[test]
+fn non_canonical_field_element_aliases_cannot_double_spend() {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().with_mut(|l| l.sequence_number = 100);
+
+    let admin = Address::generate(&env);
+    let contract_id = env.register(PrivacyVerifier, (admin.clone(),));
+    let client = PrivacyVerifierClient::new(&env, &contract_id);
+
+    let (alpha, beta, gamma, delta, gamma_abc, vk) = setup_groth16(&env, 3);
+    client.register_verification_key(&1, &1, &vk);
+
+    // Small nullifier value so `N + r` still fits in 256 bits.
+    let root_fr = hash_to_fr(b"root", &[b"alias"]);
+    let nullifier_fr = Fr::from(7u64);
+    let scope_fr = hash_to_fr(b"scope", &[b"alias"]);
+    let root = BytesN::from_array(&env, &fr_to_be32(&root_fr));
+    let nullifier = BytesN::from_array(&env, &fr_to_be32(&nullifier_fr));
+    let scope = BytesN::from_array(&env, &fr_to_be32(&scope_fr));
+    client.register_root(&root, &200);
+
+    let proof = prove_groth16(
+        &env,
+        alpha,
+        beta,
+        gamma,
+        delta,
+        &gamma_abc,
+        &[root_fr, nullifier_fr, scope_fr],
+        b"alias-seed",
+    );
+    let inputs = svec![&env, root.clone(), nullifier.clone(), scope.clone()];
+    client.verify_and_spend(&1, &1, &root, &nullifier, &scope, &inputs, &proof);
+
+    // Same field element, different byte encoding: must be rejected.
+    let alias = BytesN::from_array(&env, &add_modulus(&fr_to_be32(&nullifier_fr)));
+    let alias_inputs = svec![&env, root.clone(), alias.clone(), scope.clone()];
+    assert_eq!(
+        client.try_verify_and_spend(&1, &1, &root, &alias, &scope, &alias_inputs, &proof),
+        Err(Ok(VerifierError::NonCanonicalFieldElement))
+    );
+    assert!(!client.is_nullifier_spent(&alias));
+
+    // Non-canonical roots are rejected at registration too.
+    let root_alias = BytesN::from_array(&env, &add_modulus(&fr_to_be32(&Fr::from(9u64))));
+    assert_eq!(
+        client.try_register_root(&root_alias, &200),
+        Err(Ok(VerifierError::NonCanonicalFieldElement))
+    );
+}
+
+/// Regression for audit finding H-1: the admin is fixed atomically at deploy
+/// time, so there is no front-runnable initializer.
+#[test]
+fn admin_is_bound_at_construction() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let admin = Address::generate(&env);
+    let contract_id = env.register(PrivacyVerifier, (admin.clone(),));
+    let client = PrivacyVerifierClient::new(&env, &contract_id);
+    assert_eq!(client.get_admin(), Some(admin));
+    assert!(!client.is_paused());
 }

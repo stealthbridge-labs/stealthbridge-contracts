@@ -101,6 +101,20 @@ pub enum VerifierError {
     InvalidProof = 11,
     NoPendingAdmin = 12,
     InvalidExpiry = 13,
+    NonCanonicalFieldElement = 14,
+}
+
+/// BN254 scalar field modulus r, big-endian.
+const FR_MODULUS_BE: [u8; 32] = [
+    0x30, 0x64, 0x4e, 0x72, 0xe1, 0x31, 0xa0, 0x29, 0xb8, 0x50, 0x45, 0xb6, 0x81, 0x81, 0x58, 0x5d,
+    0x28, 0x33, 0xe8, 0x48, 0x79, 0xb9, 0x70, 0x91, 0x43, 0xe1, 0xf5, 0x93, 0xf0, 0x00, 0x00, 0x01,
+];
+
+/// True only for the canonical encoding (value < r). `Bn254Fr::from_bytes`
+/// silently reduces mod r, so `x` and `x + k*r` would otherwise be distinct
+/// storage keys for the same field element (audit C-1: nullifier aliasing).
+fn is_canonical_fr(val: &BytesN<32>) -> bool {
+    val.to_array() < FR_MODULUS_BE
 }
 
 fn is_zero_32(val: &BytesN<32>) -> bool {
@@ -129,15 +143,13 @@ pub struct PrivacyVerifier;
 
 #[contractimpl]
 impl PrivacyVerifier {
-    pub fn initialize(env: Env, admin: Address) -> Result<(), VerifierError> {
-        if env.storage().instance().has(&DataKey::Admin) {
-            return Err(VerifierError::AlreadyInitialized);
-        }
+    /// The administrator is bound atomically at deployment (audit H-1): there
+    /// is no separate initializer that a third party could front-run.
+    pub fn __constructor(env: Env, admin: Address) {
         admin.require_auth();
         env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage().instance().set(&DataKey::Paused, &false);
         extend_instance(&env);
-        Ok(())
     }
 
     pub fn get_admin(env: Env) -> Option<Address> {
@@ -239,6 +251,9 @@ impl PrivacyVerifier {
         if is_zero_32(&root) {
             return Err(VerifierError::InvalidRoot);
         }
+        if !is_canonical_fr(&root) {
+            return Err(VerifierError::NonCanonicalFieldElement);
+        }
         let current = env.ledger().sequence();
         let span = expires_at_ledger
             .checked_sub(current)
@@ -303,6 +318,15 @@ impl PrivacyVerifier {
         }
         if is_zero_32(&nullifier) || is_zero_32(&scope_digest) {
             return Err(VerifierError::InvalidNullifier);
+        }
+        // Every value that reaches the pairing (and every storage key derived
+        // from one) must be a canonical field element before any lookup.
+        if !is_canonical_fr(&root)
+            || !is_canonical_fr(&nullifier)
+            || !is_canonical_fr(&scope_digest)
+            || public_inputs.iter().any(|x| !is_canonical_fr(&x))
+        {
+            return Err(VerifierError::NonCanonicalFieldElement);
         }
         if !Self::is_root_valid(env.clone(), root.clone()) {
             return Err(VerifierError::UnknownOrExpiredRoot);
