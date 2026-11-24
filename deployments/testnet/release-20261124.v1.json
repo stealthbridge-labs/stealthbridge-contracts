@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "recordType": "soroban-testnet-release-receipt",
+  "network": "testnet",
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "protocolVersion": 30,
+  "releasedAt": "2026-11-24",
+  "sourceCommit": "11d1300 (stealthbridge-contracts feat/smart-account-factory-20261124; security fixes merged to main as c5f7d7d)",
+  "toolchain": "rustc 1.91.0, soroban-sdk 27.0.6, target wasm32v1-none, release profile; Stellar CLI 27.1.0",
+  "verification": "Every contract below was fetched back with `stellar contract fetch` and its sha256 compared; wiring was read back with simulated (--send=no) calls. Transaction hashes are verifiable on Horizon.",
+  "maintenance": {
+    "verifierRevokedAndPaused": {
+      "contractId": "CBFFDYLDWCN2D7U3MMVX75TFE5MHZX6OYL66HHWZXEGOCL5YBTZCXAOV",
+      "reason": "audit C-2: verification key circuit 1/version 1 was derived from public labels (forgeable)",
+      "revokeVerificationKeyTx": "269a6b0af6e283f83c49a1cbab1504532b8e6e84d17bcc4fa4b5c03a486d4180",
+      "setPausedTx": "6ff17b928568eb6ca9cc82c7b143bef7f0f0d2e774e8b9d0bebd92885eb616bf",
+      "observedPaused": true
+    },
+    "governanceRestored": {
+      "contracts": [
+        "CDS6HBE6YJSZTRG3VR2HLCNHWJZMKB43BLFFEHEH3Z76WXAF46LW7JOB",
+        "CBXWEA5PMDTBN5AN7FJYGGAPIWLRKXYHWLVWG5WOXH3HSRDB4RYTJBN5",
+        "CD2KIMDRYJMKGO5SMIBOQP6ADPW5I4THNZFGXWYLIPGSXAI5NRXVAPKV"
+      ],
+      "note": "Instances and code entries were archived (liveUntilLedgerSeq 0). Restored and extended; backend /v1/governance/{snapshot,code,admin} went from HTTP 502 to 200.",
+      "instanceAndCodeLiveUntilAtLeast": 6396682
+    },
+    "ttlExtendedUntilAtLeast": 6396673
+  },
+  "deployments": {
+    "governance-gate-v2": {
+      "contractId": "CAFL7OVK2HN3VFZKUPGMVJGE5STWA2XKM2EUNBO76FH6KGRJJKD46DLA",
+      "wasmSha256": "e5f5f502ec8095ee0655571616a23fd60a331cfc288b167f3d2a3b3e50e3580a",
+      "constructor": {
+        "admin": "GC3YRVLB7IN7SNUYVWFUC6OD3QWJXCUZ4HOBNIPVGY7BZDVOYMDNX5TN",
+        "corridor_registry": "CDS6HBE6YJSZTRG3VR2HLCNHWJZMKB43BLFFEHEH3Z76WXAF46LW7JOB",
+        "policy_registry": "CBXWEA5PMDTBN5AN7FJYGGAPIWLRKXYHWLVWG5WOXH3HSRDB4RYTJBN5"
+      },
+      "txs": ["4c224b9f82ee23dd41c9fe9011bbc27bead593e7ba2e47b4ac1512fe400b7a1f", "80e9ec5efa616776edd26be6459a03a9f1788ad303238a5aca5406b72aadf881"],
+      "readback": { "wasmMatches": true, "exposesPublicFlagsAllowConfig": true }
+    },
+    "settlement-adapter-v2": {
+      "contractId": "CALGHOJZA7TG2JLWX3VG3NK4HP5A77WZHX6B5U7BG3OD5TJYAGT6GY4K",
+      "wasmSha256": "523c40816b7b2ccf309d18455c780eee532e2d10ca2b449b2517c7dcb7aadb5f",
+      "constructor": {
+        "admin": "GAEJW2FUZMFVRZNX6G366XNMG5PR3NTIMNHFHMDWXC4X3TYFEPTC5JSO",
+        "governance_gate": "CAFL7OVK2HN3VFZKUPGMVJGE5STWA2XKM2EUNBO76FH6KGRJJKD46DLA"
+      },
+      "txs": ["d1b1f81cb11f3a371138194a5f74dfb88f68f567f0f79eb12ef119ed5d04de53", "be63df1141cbbaf449f109d705aabf25d02555a5589e9127ada812e483d72201"],
+      "readback": { "wasmMatches": true, "governanceGate": "CAFL7OVK2HN3VFZKUPGMVJGE5STWA2XKM2EUNBO76FH6KGRJJKD46DLA" },
+      "supersedes": "CDTOZXC4AMVTOP4ABY5WSYWI2W4UJDMNIM3NRY7225GMFVAKFD4DIWAC (wired to a gate without public_flags_allow_config; always GovernanceBlocked)"
+    },
+    "smart-account-wasm": {
+      "wasmSha256": "b28681dab8e85c1082904d67bb33589ed97be91e15dce95d693fc688d86cddc8",
+      "uploadTx": "6b2726a3e8729b2f04bfd485f4b9bb8c473eaa6e8769238a28df631916235972",
+      "includes": ["C-3 pause escape hatch", "H-1 __constructor", "H-2 domain-separated recovery + session revocation", "strict WebAuthn type/challenge"]
+    },
+    "smart-account-factory": {
+      "contractId": "CAUJ5FMGDISNYEU7T6EQDYRLFF7CVC5F2PXJVEHQHY7HM275I2X6ITH6",
+      "wasmSha256": "c1830139ad49663e59c9b4f76585513042e08ca2a311d0ea49509be7737b6721",
+      "constructor": {
+        "admin": "GAEJW2FUZMFVRZNX6G366XNMG5PR3NTIMNHFHMDWXC4X3TYFEPTC5JSO",
+        "account_wasm_hash": "b28681dab8e85c1082904d67bb33589ed97be91e15dce95d693fc688d86cddc8"
+      },
+      "txs": ["3255fe09a11aca2accc116b9e9d89000f285b413b76248d563f10c1873ac585d", "fcff9ef9b62163ea85f23882bd419c68fb71db3c4b3314129b0d324c25bb815b"],
+      "readback": { "wasmMatches": true, "accountWasmHash": "b28681dab8e85c1082904d67bb33589ed97be91e15dce95d693fc688d86cddc8" }
+    }
+  },
+  "liveSmartAccountEvidence": {
+    "account": "CBNY2LDYIZMQXSN3OKXRGKTCH74GZKTTTW247EG3EF3KCQNSUMYJLTC7",
+    "predictedByFactoryBeforeCreation": true,
+    "ownerSigner": "Ed25519 key of GASUPDAHPGSTVNL54WSE7Z37SSS7KGTZULQDJ6MSQVQY4H3SMR6YQ3QV (disposable Testnet key; not a passkey)",
+    "guardianSigner": "Ed25519 key of GBXXE7JVT6JPUOLBYZM4ECD63DUVGGPJZXYMVVLUZT42GFPHXG3UEARH",
+    "rpDomainSha256": "sha256(\"stealthbridge.vercel.app\")",
+    "createAccountTx": "c631273181842946f25d2feb671568cc1e11f549614faac6fbf2a28dbdf3b511",
+    "fundTx": "69455507a1d21be0982f95b748728f9d088008262d947c9d55f7abde50dc767b",
+    "guardianSpendAttempt": "rejected in enforcing simulation: HostError Error(Auth, InvalidAction)",
+    "ownerAuthorizedPaymentTx": "a9cfd6bbb9b5e26f7664481d0077929635eac750633e5c74af2d555d7b39b344",
+    "ownerAuthorizedPaymentLedger": 5896854,
+    "payment": "5 Testnet XLM via native SAC transfer from the smart account; fee paid by a separate relayer key that holds no account authority",
+    "balanceAfterStroops": 200000000,
+    "reproduce": "tools/smart-account-live: npm ci && OWNER_SECRET=… RELAYER_SECRET=… ACCOUNT=… TOKEN=… TO=… AMOUNT=… npm run spend"
+  },
+  "notYetProven": [
+    "passkey (secp256r1/WebAuthn) owner on Testnet: unit-tested only; needs browser enrolment",
+    "settlement through settlement-adapter-v2: needs an approved corridor config + policy in the registries",
+    "any privacy property: the verifier is paused; no real circuit exists (ADR-0002)"
+  ],
+  "scope": {
+    "mainnet_enabled": false,
+    "customer_funds": false,
+    "external_audit_completed": false
+  }
+}

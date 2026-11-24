@@ -96,6 +96,9 @@ jobs:
       - name: Reject unsafe artifacts, false authorization and signing paths
         working-directory: tools/smart-account-preflight
         run: npm test
+      - name: Smart-account auth-entry signing helpers (offline unit tests)
+        working-directory: tools/smart-account-live
+        run: npm ci --ignore-scripts && npm test
       # Live RPC verification stays a separate, operator-invoked, read-only
       # preflight. It must never auto-deploy or silently extend TTL.
 
@@ -112,7 +115,7 @@ jobs:
           components: rustfmt, clippy
       - name: Test, lint, and compile operational Testnet protocol crates
         run: |
-          for dir in contracts/settlement-adapter contracts/fee-vault contracts/privacy-verifier contracts/smart-account; do
+          for dir in contracts/settlement-adapter contracts/fee-vault contracts/privacy-verifier contracts/smart-account contracts/smart-account-factory; do
             echo "=== Checking $dir ==="
             cargo fmt --manifest-path "$dir/Cargo.toml" -- --check
             cargo test --manifest-path "$dir/Cargo.toml"

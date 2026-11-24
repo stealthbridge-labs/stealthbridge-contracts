@@ -1,0 +1,15 @@
+{
+  "name": "@stealthbridge/smart-account-live",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Testnet-only: authorize a payment from a StealthBridge smart account through its __check_auth, with a separate fee-paying relayer",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test",
+    "spend": "node src/spend.mjs"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "16.4.1"
+  }
+}
