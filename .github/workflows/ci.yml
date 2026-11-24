@@ -96,6 +96,9 @@ jobs:
       - name: Reject unsafe artifacts, false authorization and signing paths
         working-directory: tools/smart-account-preflight
         run: npm test
+      - name: Smart-account auth-entry signing helpers (offline unit tests)
+        working-directory: tools/smart-account-live
+        run: npm ci --ignore-scripts && npm test
       # Live RPC verification stays a separate, operator-invoked, read-only
       # preflight. It must never auto-deploy or silently extend TTL.
 
