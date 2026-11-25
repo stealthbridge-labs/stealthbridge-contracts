@@ -246,11 +246,13 @@ fn verify_signer_signature(
                     }
                 }
             }
-            // Require User Present (UP bit 0x01) in flags byte 32.
+            // Require User Present (UP 0x01) AND User Verified (UV 0x04) in
+            // flags byte 32: a payment must be approved by the device owner
+            // (biometric or PIN), not merely by touching the authenticator.
             let flags = authenticator_data
                 .get(32)
                 .ok_or(AccountError::InvalidWebAuthn)?;
-            if (flags & 0x01) == 0 {
+            if (flags & 0x05) != 0x05 {
                 return Err(AccountError::InvalidWebAuthn);
             }
             // ClientDataJSON must be an assertion (`webauthn.get`, never a

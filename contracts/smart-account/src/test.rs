@@ -519,3 +519,297 @@ fn webauthn_requires_assertion_type_and_exact_challenge_field() {
         Err(Ok(AccountError::InvalidWebAuthn))
     );
 }
+
+// ---------------------------------------------------------------------------
+// Passkey payment authorization (milestone 4). These drive the account's real
+// __check_auth with a WebAuthn assertion over a Soroban authorization payload.
+// ---------------------------------------------------------------------------
+
+struct Assertion {
+    flags: u8,
+    rp: [u8; 32],
+    signed_payload: [u8; 32],
+    high_s: bool,
+}
+
+fn passkey_account(env: &Env, key: &P256Key, rp: [u8; 32]) -> (Address, BytesN<32>) {
+    let owner_key = SignerKey::Secp256r1(p256_pubkey_bytes(env, key));
+    let guardian = SignerKey::Ed25519(BytesN::from_array(
+        env,
+        &EdSigningKey::from_bytes(&[77u8; 32])
+            .verifying_key()
+            .to_bytes(),
+    ));
+    let account = env.register(
+        StealthBridgeSmartAccount,
+        (
+            owner_key.clone(),
+            BytesN::from_array(env, &rp),
+            Some(guardian),
+        ),
+    );
+    (account, signer_id_for_key(env, &owner_key))
+}
+
+fn webauthn_sig(env: &Env, key: &P256Key, signer: &BytesN<32>, a: &Assertion) -> AuthSignature {
+    let mut auth_data = std::vec::Vec::from(a.rp);
+    auth_data.push(a.flags);
+    auth_data.extend_from_slice(&7u32.to_be_bytes());
+    let json = std::format!(
+        r#"{{"type":"webauthn.get","challenge":"{}","origin":"https://stealthbridge.vercel.app","crossOrigin":false}}"#,
+        base64url(&a.signed_payload)
+    );
+    let mut signed = auth_data.clone();
+    signed.extend_from_slice(&Sha256::digest(json.as_bytes()));
+    let digest: [u8; 32] = Sha256::digest(&signed).into();
+    let sig: P256Sig = key.sign_prehash(&digest).unwrap();
+    let low = sig.normalize_s().unwrap_or(sig);
+    let chosen = if a.high_s {
+        // Same (r, s) mathematically valid signature with s' = n - s.
+        P256Sig::from_scalars(low.r(), -*low.s()).unwrap()
+    } else {
+        low
+    };
+    let mut raw = [0u8; 64];
+    raw.copy_from_slice(&chosen.to_bytes());
+    AuthSignature::WebAuthn(WebAuthnProof {
+        signer_id: signer.clone(),
+        authenticator_data: Bytes::from_slice(env, &auth_data),
+        client_data_json: Bytes::from_slice(env, json.as_bytes()),
+        signature: BytesN::from_array(env, &raw),
+    })
+}
+
+fn transfer_ctx(env: &Env, from: &Address, to: &Address, amount: i128) -> Context {
+    Context::Contract(ContractContext {
+        contract: Address::generate(env),
+        fn_name: Symbol::new(env, "transfer"),
+        args: svec![
+            env,
+            from.into_val(env),
+            to.into_val(env),
+            amount.into_val(env)
+        ],
+    })
+}
+
+fn check(
+    env: &Env,
+    account: &Address,
+    payload: [u8; 32],
+    sig: AuthSignature,
+    ctx: Context,
+) -> Result<(), Result<AccountError, soroban_sdk::InvokeError>> {
+    env.try_invoke_contract_check_auth::<AccountError>(
+        account,
+        &BytesN::from_array(env, &payload),
+        svec![env, sig].into_val(env),
+        &svec![env, ctx],
+    )
+}
+
+const RP: [u8; 32] = [0x5a; 32];
+
+#[test]
+fn passkey_authorizes_exact_payment_payload() {
+    let env = Env::default();
+    let key = P256Key::from_bytes(&[91u8; 32].into()).unwrap();
+    let (account, signer) = passkey_account(&env, &key, RP);
+    let to = Address::generate(&env);
+    let payload: [u8; 32] = Sha256::digest(b"soroban-auth-payload:transfer:25").into();
+    let ok = Assertion {
+        flags: 0x05,
+        rp: RP,
+        signed_payload: payload,
+        high_s: false,
+    };
+    assert_eq!(
+        check(
+            &env,
+            &account,
+            payload,
+            webauthn_sig(&env, &key, &signer, &ok),
+            transfer_ctx(&env, &account, &to, 25)
+        ),
+        Ok(())
+    );
+}
+
+#[test]
+fn passkey_signature_cannot_authorize_a_different_payload() {
+    // Any change to recipient, asset, amount, nonce, network or expiry
+    // changes the Soroban authorization payload the host passes in.
+    let env = Env::default();
+    let key = P256Key::from_bytes(&[92u8; 32].into()).unwrap();
+    let (account, signer) = passkey_account(&env, &key, RP);
+    let to = Address::generate(&env);
+    let signed_for: [u8; 32] = Sha256::digest(b"payload:amount=25").into();
+    let substituted: [u8; 32] = Sha256::digest(b"payload:amount=2500").into();
+    let a = Assertion {
+        flags: 0x05,
+        rp: RP,
+        signed_payload: signed_for,
+        high_s: false,
+    };
+    assert_eq!(
+        check(
+            &env,
+            &account,
+            substituted,
+            webauthn_sig(&env, &key, &signer, &a),
+            transfer_ctx(&env, &account, &to, 2500)
+        ),
+        Err(Ok(AccountError::InvalidWebAuthn))
+    );
+}
+
+#[test]
+fn passkey_requires_matching_rp_and_user_verification() {
+    let env = Env::default();
+    let key = P256Key::from_bytes(&[93u8; 32].into()).unwrap();
+    let (account, signer) = passkey_account(&env, &key, RP);
+    let to = Address::generate(&env);
+    let payload: [u8; 32] = Sha256::digest(b"payload:flags").into();
+    for (flags, rp) in [(0x05u8, [0x11u8; 32]), (0x01, RP), (0x04, RP), (0x00, RP)] {
+        let a = Assertion {
+            flags,
+            rp,
+            signed_payload: payload,
+            high_s: false,
+        };
+        assert_eq!(
+            check(
+                &env,
+                &account,
+                payload,
+                webauthn_sig(&env, &key, &signer, &a),
+                transfer_ctx(&env, &account, &to, 1)
+            ),
+            Err(Ok(AccountError::InvalidWebAuthn)),
+            "flags={flags:#x}"
+        );
+    }
+}
+
+#[test]
+fn passkey_high_s_signature_is_rejected_by_the_host() {
+    let env = Env::default();
+    let key = P256Key::from_bytes(&[94u8; 32].into()).unwrap();
+    let (account, signer) = passkey_account(&env, &key, RP);
+    let to = Address::generate(&env);
+    let payload: [u8; 32] = Sha256::digest(b"payload:high-s").into();
+    let a = Assertion {
+        flags: 0x05,
+        rp: RP,
+        signed_payload: payload,
+        high_s: true,
+    };
+    assert!(check(
+        &env,
+        &account,
+        payload,
+        webauthn_sig(&env, &key, &signer, &a),
+        transfer_ctx(&env, &account, &to, 1)
+    )
+    .is_err());
+}
+
+#[test]
+fn another_key_or_a_paused_account_cannot_authorize() {
+    let env = Env::default();
+    let key = P256Key::from_bytes(&[95u8; 32].into()).unwrap();
+    let attacker = P256Key::from_bytes(&[96u8; 32].into()).unwrap();
+    let (account, signer) = passkey_account(&env, &key, RP);
+    let to = Address::generate(&env);
+    let payload: [u8; 32] = Sha256::digest(b"payload:attacker").into();
+    let a = Assertion {
+        flags: 0x05,
+        rp: RP,
+        signed_payload: payload,
+        high_s: false,
+    };
+    // Attacker key claiming the owner's signer id.
+    assert!(check(
+        &env,
+        &account,
+        payload,
+        webauthn_sig(&env, &attacker, &signer, &a),
+        transfer_ctx(&env, &account, &to, 1)
+    )
+    .is_err());
+    // Paused account: even the real owner cannot spend.
+    let client = StealthBridgeSmartAccountClient::new(&env, &account);
+    env.mock_all_auths();
+    client.set_paused(&true);
+    env.set_auths(&[]);
+    assert_eq!(
+        check(
+            &env,
+            &account,
+            payload,
+            webauthn_sig(&env, &key, &signer, &a),
+            transfer_ctx(&env, &account, &to, 1)
+        ),
+        Err(Ok(AccountError::Paused))
+    );
+}
+
+#[test]
+fn revoked_or_recovered_passkey_can_no_longer_spend() {
+    let env = Env::default();
+    env.ledger().with_mut(|l| l.sequence_number = 1_000);
+    let key = P256Key::from_bytes(&[97u8; 32].into()).unwrap();
+    let (account, signer) = passkey_account(&env, &key, RP);
+    let client = StealthBridgeSmartAccountClient::new(&env, &account);
+    let to = Address::generate(&env);
+    let payload: [u8; 32] = Sha256::digest(b"payload:recovered").into();
+    let a = Assertion {
+        flags: 0x05,
+        rp: RP,
+        signed_payload: payload,
+        high_s: false,
+    };
+
+    // Guardian recovery to a new passkey deactivates the old one.
+    let guardian = EdSigningKey::from_bytes(&[77u8; 32]);
+    let guardian_key = SignerKey::Ed25519(BytesN::from_array(
+        &env,
+        &guardian.verifying_key().to_bytes(),
+    ));
+    let guardian_id = signer_id_for_key(&env, &guardian_key);
+    let new_key = P256Key::from_bytes(&[98u8; 32].into()).unwrap();
+    let new_owner = SignerKey::Secp256r1(p256_pubkey_bytes(&env, &new_key));
+    let challenge = client.recovery_challenge(&new_owner, &100).to_array();
+    client.propose_recovery(
+        &guardian_id,
+        &AuthSignature::Ed25519(
+            guardian_id.clone(),
+            sign_ed25519(&env, &guardian, &challenge),
+        ),
+        &new_owner,
+        &100,
+    );
+    env.ledger().with_mut(|l| l.sequence_number = 1_100);
+    let new_id = client.execute_recovery();
+    assert_eq!(
+        check(
+            &env,
+            &account,
+            payload,
+            webauthn_sig(&env, &key, &signer, &a),
+            transfer_ctx(&env, &account, &to, 1)
+        ),
+        Err(Ok(AccountError::SignerInactiveOrExpired))
+    );
+    // The replacement passkey works.
+    assert_eq!(
+        check(
+            &env,
+            &account,
+            payload,
+            webauthn_sig(&env, &new_key, &new_id, &a),
+            transfer_ctx(&env, &account, &to, 1)
+        ),
+        Ok(())
+    );
+}
