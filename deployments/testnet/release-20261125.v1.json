@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "recordType": "soroban-testnet-release-receipt",
+  "network": "testnet",
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "releasedAt": "2026-11-25",
+  "sourceCommit": "c14e54f (stealthbridge-contracts main)",
+  "change": "SmartAccountFactory now deploys smart-account WASM that requires WebAuthn User Verification (UP|UV) for passkey signatures. Accounts created earlier keep WASM b28681da (UP only).",
+  "smartAccountWasm": {
+    "wasmSha256": "619dd018f4dd7f8c9a751c98d609486eacaf87fa8ec6ddbc01da46f8583ee12c",
+    "uploadTx": "d048f1af4d74e08e5daef5b4283bf86a908559a345b85d730da270b4ce042094"
+  },
+  "factory": {
+    "contractId": "CAUJ5FMGDISNYEU7T6EQDYRLFF7CVC5F2PXJVEHQHY7HM275I2X6ITH6",
+    "setAccountWasmTx": "c1e2dae28565bdad1f444b08ca051267a731a95b8b3ff1dc0d9d1f204e3c897c",
+    "readbackAccountWasmHash": "619dd018f4dd7f8c9a751c98d609486eacaf87fa8ec6ddbc01da46f8583ee12c",
+    "signedBy": "sb_protocol_deployer (factory admin); the relayer key has no admin rights"
+  },
+  "localNetworkEvidence": {
+    "network": "Standalone Network ; February 2017 (stellar/quickstart, protocol 30, RPC 30.0.1)",
+    "accountWasm": "619dd018f4dd7f8c9a751c98d609486eacaf87fa8ec6ddbc01da46f8583ee12c",
+    "smartAccount": "CCQFHKYJ4FEQNP3DON636MZHMBSDUWN3WK7NBLC7JSWOPAFZXPNDONSX",
+    "passkeyAuthorizedPaymentTx": "28cd4ab3788922adac168c249979df19b390ad64a9c69fd9d50c04733ab53805",
+    "ledger": 841,
+    "result": "SUCCESS; destination +12.5 XLM, account 100 -> 87.5 XLM; replay 409; wrong challenge / missing UV / impostor key 422; old signature on a new intent 422",
+    "reproduce": "stealthbridge-backend tests/payments_local_e2e.rs (see workspace CLAUDE.md)"
+  },
+  "testnetPasskeyPaymentStatus": "Not yet executed on Testnet: requires a browser passkey and operator authorization (TESTNET_OPERATIONS_REQUEST.md OP-5)."
+}
