@@ -44,6 +44,12 @@ jobs:
         run: python3 scripts/check_privacy_evidence.py
       - name: Enforce issuer privacy and redemption remain independently unverified
         run: python3 scripts/check_issuer_capabilities.py
+      - name: Validate the canonical privacy dependency lock (fail-closed NO_GO verdicts)
+        run: python3 scripts/verify_privacy_dependency_lock.py
+      - name: Re-hash pinned upstream privacy sources on GitHub
+        run: python3 scripts/verify_privacy_dependency_lock.py --sources
+      - name: Keep the forgeable Groth16 smoke-test setup quarantined
+        run: python3 scripts/check_forgeable_key_quarantine.py
       - run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - run: python3 scripts/validate_protocol_v3.py
       - run: python3 scripts/artifacts.py
@@ -122,5 +128,5 @@ jobs:
             cargo clippy --manifest-path "$dir/Cargo.toml" --all-targets -- -D warnings
             cargo build --manifest-path "$dir/Cargo.toml" --release --target wasm32v1-none
           done
-          (cd tools/privacy-rail-poc && cargo test)
+          (cd tools/privacy-rail-poc && cargo build --locked && cargo test --locked --features forgeable-test-setup)
       - run: python3 scripts/validate_protocol_v3.py

@@ -40,7 +40,10 @@
       "observedAdmin": "GAEJW2FUZMFVRZNX6G366XNMG5PR3NTIMNHFHMDWXC4X3TYFEPTC5JSO",
       "observedPaused": false,
       "readbackWasmMatches": true,
-      "proofSystem": "BN254-Groth16"
+      "proofSystem": "BN254-Groth16",
+      "registeredKeyClass": "forgeable-test-setup",
+      "realPrivacyProof": false,
+      "quarantine": "The registered verification key comes from the SHA-256-labelled pairing smoke test (examples/pairing_smoke_test_forgeable_key.rs): anyone can forge proofs for it. It proves only that the BN254 pairing host function works. Revoke the key and pause the instance: OP-1 in TESTNET_OPERATIONS_REQUEST.md (awaiting approval). Real privacy proofs come from the upstream rails in integrations/privacy-dependency-lock.v2.json."
     },
     "smart-account": {
       "contractId": "CAZVXXE3K3PA4UPREK32Q6RXKHZKGBD3CXGTJQDCUMG2SNS4WLGFCY3O",

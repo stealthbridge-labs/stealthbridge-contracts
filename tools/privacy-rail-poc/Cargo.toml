@@ -10,6 +10,15 @@ publish = false
 license = "MIT"
 description = "Isolated Milestone 4 Soroban 28 verification & adapter boundary PoC for StealthBridge privacy rails"
 
+[features]
+# Enables the SHA-256-labelled (forgeable) Groth16 setup in `private_pool`.
+# Test-only: `cargo test --features forgeable-test-setup`.
+forgeable-test-setup = []
+
+[[test]]
+name = "adversarial_vectors"
+required-features = ["forgeable-test-setup"]
+
 [dependencies]
 ark-bn254 = { version = "0.5.0", default-features = false, features = ["curve"] }
 ark-ec = { version = "0.5.0", default-features = false }

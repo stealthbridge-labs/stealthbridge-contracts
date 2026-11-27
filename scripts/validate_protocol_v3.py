@@ -100,6 +100,12 @@ def validate_v3(record):
         )
 
     pv = proto["privacy-verifier"]
+    # The in-house verifier's key is the forgeable SHA-256-labelled smoke-test key (audit C-2).
+    require(
+        pv.get("registeredKeyClass") == "forgeable-test-setup" and pv.get("realPrivacyProof") is False
+        and "OP-1" in str(pv.get("quarantine", "")),
+        "privacy-verifier must stay labelled as a forgeable pairing smoke test until OP-1 revokes its key",
+    )
     require(hex_hash(pv.get("liveProofVerifyTx", ""), 64), "missing liveProofVerifyTx")
     require(
         isinstance(pv.get("liveProofVerifyLedger"), int) and pv["liveProofVerifyLedger"] > pv["initializeLedger"],

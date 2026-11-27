@@ -19,6 +19,17 @@ ark-ec = { version = "0.5.0", default-features = false }
 ark-ff = { version = "0.5.0", default-features = false }
 sha2 = "0.10.9"
 
+[features]
+# The pairing smoke-test generator derives its Groth16 setup from public
+# SHA-256 labels, so anyone can forge proofs for its key (audit C-2). It only
+# builds when this feature is requested explicitly.
+forgeable-test-setup = []
+
+[[example]]
+name = "pairing_smoke_test_forgeable_key"
+path = "examples/pairing_smoke_test_forgeable_key.rs"
+required-features = ["forgeable-test-setup"]
+
 [workspace]
 resolver = "2"
 

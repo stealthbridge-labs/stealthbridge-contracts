@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 2,
+  "canonical": true,
+  "supersedes": "integrations/upstream-source-lock.v1.json",
+  "recordedAt": "2026-11-27",
+  "network": "testnet",
+  "networkPassphrase": "Test SDF Network ; September 2015",
+  "policy": "ADR-0007 (workspace docs/adr/0007-privacy-architecture.md). No StealthBridge-authored circuit, verifier or proof system ships without independent cryptographic review (ADR-0002 \u00a72).",
+  "rails": {
+    "personal-shielded-pool": {
+      "upstream": {
+        "repository": "NethermindEth/stellar-private-payments",
+        "license": "Apache-2.0 (workspace); circomlib LGPL-3.0; circuit artifacts carry GPL-3.0 tooling notices",
+        "deploymentCommit": "25f64658e5c26e0f7aac4b35e68f0fed1507cb83",
+        "deploymentCommitNote": "Commit that recorded the live Testnet deployment (deployments/testnet/deployments.json). The pool WASM rebuilt from it is code-identical to the on-chain WASM.",
+        "cliRelease": {
+          "tag": "cli-v0.4.0",
+          "commit": "cebb972b5872cba3a1cc40bcdfab297168ccc1d7",
+          "assetSha256": {
+            "dist.tar.gz": "901b10dc30dc75668993926b8bcb37fa1471d10c00437bf935334b7049b65d0d",
+            "source-bundle.tar.gz": "33f5d54ea70eb01a96409b62b60576ba0b13f4de5e935931651e9711266a4812"
+          }
+        },
+        "circuitsRelease": {
+          "tag": "circuits-v0.7",
+          "commit": "b2a3ace011e80201d356eb233c1448caf6e5faad",
+          "builtFromCommit": "801b311d22aff86f1b0802b6de4946758f5c2fef",
+          "circom": "2.2.3",
+          "circomlibCommit": "35e54ea21da3e8762557234298dbb553c175ea8d",
+          "circomWitnessRs": "0.3.0"
+        },
+        "npmClient": {
+          "package": "stellar-private-payments",
+          "version": "0.4.0",
+          "integrity": "sha512-0tTi9HcR2tYnacnfVfB6tVQNRvZSlJpAIk58ya3bvAuDBrNm4PiYBgNfNyhDHJxBlywnpk8spQVWbY58bfGvog==",
+          "sourceProvenance": "unbound: the registry entry has no gitHead, so the tarball is not yet tied to a source commit"
+        },
+        "sourceBlobs": {
+          "circuits/src/policy_tx_2_2.circom": "bb6b47b867ca0928eeb8f93d63465f778f1a60a8",
+          "circuits/src/core/merkle.rs": "0599bdf12cb71484bbdf75ca0cc6b032f39905bb",
+          "contracts/pool/src/lib.rs": "1ad5516caa3d0f804c90cb8c41443121657320c6",
+          "contracts/circom-groth16-verifier/src/lib.rs": "3bca329d7a4e92144f7742fd8c58249a32fd5e0e",
+          "deployments/testnet/circuits.json": "331712224e34dbd44c3789feed7ac1344526b9a9",
+          "deployments/testnet/deployments.json": "4745091de04af3fc735f96cce2d4533fb4f69441"
+        }
+      },
+      "toolchain": {
+        "rust": "1.97.1",
+        "sorobanSdk": "28.0.0#48d506712f964094d14176e2f0b02afcd1054567",
+        "stellarCli": "30.0.1#f2a7b74175c34585f3b30a1abf42a2d41cbcc390",
+        "evidence": "Read from the contractmetav0 section (rsver, rssdkver, cliver) of the WASM fetched from Testnet."
+      },
+      "cryptography": {
+        "proofSystem": "Groth16",
+        "curve": "BN254",
+        "hash": "Poseidon2",
+        "circuitForLivePolicy": "policy_tx_2_2_B",
+        "trustedSetup": "local",
+        "trustedSetupNote": "Every circuit in circuits.json records setup=local: a single-party setup whose operator could forge proofs. Testnet research only; NO_GO for any value-bearing use.",
+        "circuitArtifacts": {
+          "policy_tx_2_2_B": {
+            "r1cs": "3cd79e47a124b99d3ec698dcf63938fe5bb51a05ff13b7b3d98a854336bbaa7c",
+            "graph.bin": "d4dc29962f760ce9ed5ddbab3619e3c0502daa02d6b8a608d77df330cff6a397",
+            "proving_key.bin": "16721797e783b728d82276ac2a333d18a7479ded69af5241556d20e0130e4244"
+          }
+        },
+        "circuitArtifactCheck": "All 51 released artifacts in cli-v0.4.0 dist match deployments/testnet/circuits.json (2026-11-27)."
+      },
+      "testnetDeployment": {
+        "source": "deployments/testnet/deployments.json at deploymentCommit",
+        "deploymentLedger": 5936728,
+        "operator": "Nethermind (third party). Pool admin and association-set lists are controlled by its admin account, not by StealthBridge.",
+        "contracts": [
+          {
+            "role": "pool",
+            "asset": "native",
+            "policy": "blocklist",
+            "gvk": "off",
+            "id": "CCW3LL6DAYESXPLCI5XVHYAM2I6XOW7PUAZLXDH4UAVETQN332B5XIHL",
+            "wasmSha256": "830977a55b6e28ba8388fde5e4ffaa67dba6bbaca5e9d4cd94c2f644bb4c41fb",
+            "wasmBytes": 43033
+          },
+          {
+            "role": "pool",
+            "asset": "native",
+            "policy": "blocklist",
+            "gvk": "traceable",
+            "id": "CAJAMQMMM5CMRY6OOHFAZSDN2UXX5ACXGF2VANERZLXWTUMCDICYW6TO",
+            "wasmSha256": "0b03494796e66c2df3e731a0bfa34c62194d91ef95e409f6d7ba694abe081165",
+            "wasmBytes": 49086
+          },
+          {
+            "role": "pool",
+            "asset": "native",
+            "policy": "blocklist",
+            "gvk": "viewOnly",
+            "id": "CAP74XRK6XWUYL2BTVWHUBUPOB5UHXFDRNK6LAFP42RRC7EWYORFSFZH",
+            "wasmSha256": "0b03494796e66c2df3e731a0bfa34c62194d91ef95e409f6d7ba694abe081165",
+            "wasmBytes": 49086
+          },
+          {
+            "role": "pool",
+            "asset": "EURC:GB3Q6QDZYTHWT7E5PVS3W7FUT5GVAFC5KSZFFLPU25GO7VTC3NM2ZTVO",
+            "policy": "blocklist",
+            "gvk": "off",
+            "id": "CBQNV6RSE42CUKGWYCPPWKALTKCQJFDJKGAFYCICZJ7DO6JMCUCZRYWX",
+            "wasmSha256": "830977a55b6e28ba8388fde5e4ffaa67dba6bbaca5e9d4cd94c2f644bb4c41fb",
+            "wasmBytes": 43033
+          },
+          {
+            "role": "groth16-verifier",
+            "key": "B",
+            "id": "CCGCOFDOT5BLUK75IJM7WDTJZNWEATYY2Z7ZWVPWCC4BUFT6WYH26DNJ",
+            "wasmSha256": "2a65dacf8b9255b11d4c6a06c5dbd1e60309cdcd26656bd3dece15508af6730f",
+            "wasmBytes": 4646
+          },
+          {
+            "role": "groth16-verifier",
+            "key": "B_gvk_T",
+            "id": "CAGY64AXMW54ZI2RE6MUEYCTFJ5XVMRZQNOBXW7JN3OZIEIDLJCTYKYX",
+            "wasmSha256": "5ac409020836e1a5afa0eb11635ba6eb5fd1d1b4395d3fab6b6ea47d942384c4",
+            "wasmBytes": 6118
+          },
+          {
+            "role": "groth16-verifier",
+            "key": "B_gvk_V",
+            "id": "CDAT6XQV2W4PJQUEQ5VGHV4ORZQ6N3VYMJUETQ5ALYKOBJMZ2A5BYCMB",
+            "wasmSha256": "4a338693d91e72088d0b008a81670363bc8fa775bc3ce3ed79d3c2297a2e1f71",
+            "wasmBytes": 5478
+          },
+          {
+            "role": "asp-membership",
+            "id": "CA6LPZEAKZJD4F5R2GRVI4KNZBJMK7II3GXKDIWD7ZCKPJAHTLCTGQ7M",
+            "wasmSha256": "3fe2e1699294c62618b1420fb80a81b0f6ceb886a00d7ab4860303e651a31aec",
+            "wasmBytes": 22326
+          },
+          {
+            "role": "asp-non-membership",
+            "id": "CBDFZZZENBZTC4R2PEHTTBJR7SJLAW2UL3PBK7TO5TU2R4SVW67VVZJP",
+            "wasmSha256": "0c2db3f552b866338f5371d2f4a5d8c4dbab0ee6486a4f8151bce9c9e366ba2e",
+            "wasmBytes": 39897
+          },
+          {
+            "role": "public-key-registry",
+            "id": "CDWAK76PYFEJDBLJGKPYNZAUP7CPVM5BEALB5S2KLV35RNXVAXWVRQ3V",
+            "wasmSha256": "69536f7ce9dc24456484547ec169642bf682d8ccc5499b0d711abc5ad23d919b",
+            "wasmBytes": 8990
+          },
+          {
+            "role": "public-key-registry-verifier",
+            "id": "CCZUEBGVJ6VYX6Y5KLGVHCJQVZRRGRORWVYBCTJWXRF554QSNR7JD2IL",
+            "wasmSha256": "3f8d6905984bf8f3f1ad55e4ef7b08d258c23a195a7d4aab6fef9ccf484795f3",
+            "wasmBytes": 4198
+          }
+        ],
+        "supersededDeployment": "Pool CBKLEZ3T7EFGQS3OFB4KGAAKEZ3KF2YJTWBOXWKUIKTIFWJ56UF6SNKI and its companions (cited in ADR-0006 on 2026-11-26) were replaced by this redeployment."
+      },
+      "reproduction": {
+        "poolWasm": "byte-identical",
+        "poolWasmDetail": "Rebuilt from deploymentCommit with Rust 1.97.1 and the released Stellar CLI 30.0.1 (#f2a7b741; GitHub asset digest 48c70074020e09af0a3ebbd2bf62d53c9aec47935e49a112d3cd90fb4e37658f) via `stellar contract build --optimize`: pool (830977a5\u2026, 43,033 B) and pool-gvk (0b034947\u2026, 49,086 B) are byte-identical to the WASM fetched from Testnet on 2026-11-27.",
+        "proofAgainstLiveVerifier": "pending",
+        "otherContracts": "asp-membership, asp-non-membership, public-key-registry and the three Groth16 verifiers (which embed their verification key) are verified against Testnet by hash, not yet rebuilt from source."
+      },
+      "audit": {
+        "status": "unaudited",
+        "evidence": "Upstream README: work in progress, not audited, not for production with real assets."
+      },
+      "verdict": "NO_GO",
+      "blockers": [
+        "Single-party (local) trusted setup for every circuit.",
+        "Upstream code unaudited.",
+        "Pools, admin and association sets are operated by a third party.",
+        "npm client 0.4.0 not yet bound to a source commit.",
+        "Durable note and event indexing beyond the ~7-day RPC event window not yet built."
+      ]
+    },
+    "business-confidential-token": {
+      "upstream": {
+        "repository": "OpenZeppelin/stellar-contracts",
+        "license": "MIT",
+        "tag": "v0.8.0",
+        "commit": "ddc327eb92d63709436da3a8455f641c2d5476c5",
+        "crate": "stellar-confidential =0.8.0",
+        "sourceBlobs": {
+          "packages/confidential/README.md": "ab1ec69366fd11147eae55431ffbe11fb3f16f56",
+          "packages/confidential/src/storage.rs": "2f894263a328d75c3fb87efc3656310d4b50d5d5",
+          "packages/confidential/src/verifier/mod.rs": "9b7b9424e0b4f6c23da0393ecb1c35a051fd3bd0",
+          "packages/confidential/circuits/transfer/src/main.nr": "b652748a68a7eb7757d79f95e7eb4af5675d94c0",
+          "packages/confidential/docs/protocol/security.md": "ce2e211db4644fefc6370d2c60a048333f22cdf6"
+        }
+      },
+      "toolchain": {
+        "sorobanSdk": "28.0.0",
+        "nargo": "1.0.0-beta.11",
+        "bb": "0.87.0"
+      },
+      "cryptography": {
+        "commitments": "Pedersen on Grumpkin (unchunked)",
+        "proofSystem": "UltraHonk (keccak oracle hash), verified cross-contract by the verifier registry",
+        "disclosure": "Per-transfer ephemeral ECDH ciphertexts for recipient and registered auditor keys",
+        "verificationKeyBlobs": {
+          "register.vk.bin": "dd1ec9f86efad8a0b8003c77cbcff371247b75a4",
+          "transfer.vk.bin": "3d285342a978d7e676e7b6bc18f4fe942e540467",
+          "withdraw.vk.bin": "3358a7282ef78d7d763e2e879a70764b8422492d",
+          "set_spender.vk.bin": "6ae4cbdfcf4eae5dc2a2b3607f22147c1df16fd3",
+          "spender_transfer.vk.bin": "d093c218d8a7890ac539363ece199be133c5d352",
+          "clawback.vk.bin": "e19728aaabc1a02e4ca69393ff22594d69ad92ce"
+        },
+        "trustedSetup": "none required (UltraHonk, universal SRS)"
+      },
+      "clientSdk": {
+        "official": "none: v0.8.0 ships a normative client specification (packages/confidential/docs/sdk) with conformance vectors, not a package",
+        "thirdPartyCandidates": [
+          {
+            "package": "stellar-confidential-token-sdk",
+            "version": "0.1.9",
+            "publisher": "individual maintainer (not OpenZeppelin)",
+            "lastPublished": "2026-08-06",
+            "status": "unreviewed; predates v0.8.0; must pass the v0.8.0 conformance vectors before any use"
+          }
+        ]
+      },
+      "testnetDeployment": {
+        "contracts": [],
+        "note": "No StealthBridge or upstream Testnet deployment of the confidential token suite is known. Deploying the example suite needs owner approval."
+      },
+      "audit": {
+        "status": "audited-at-snapshot",
+        "report": "audits/Stellar Contracts Library v0.8.0 Audit.pdf (sha256 52cff3150ad82eea6c62d4ff564c79149952b98c17d1cddc05fb2964fe5764d0)",
+        "scope": "Diff audit 9c5e279..2128f11 covering tokens/src/confidential (auditor, verifier, compliance, storage) and every Noir circuit; plus 'fbfde38..a5bd8cb' covering the confidential verifier.",
+        "gap": "The release (ddc327eb) moved the package to packages/confidential; changes between snapshot 2128f11 and the release are not verified here. The client layer is out of scope (unaudited)."
+      },
+      "verdict": "NO_GO",
+      "blockers": [
+        "No reviewed client implementation (keys, witnesses, proving, wallet state).",
+        "No Testnet deployment to integrate against.",
+        "Audit-snapshot-to-release delta not yet reviewed."
+      ]
+    }
+  }
+}
