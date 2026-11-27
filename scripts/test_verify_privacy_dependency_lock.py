@@ -79,5 +79,32 @@ class PrivacyLockTest(unittest.TestCase):
             v.check_sources(lock, lambda repo, commit, path: "0" * 40)
 
 
+class ProofEvidenceTest(unittest.TestCase):
+    EVIDENCE = json.loads((Path(__file__).resolve().parents[1] /
+                           "integrations/evidence/nethermind-policy-b-testnet-verifier.v1.json").read_text())
+
+    def honest(self, verifier, proof, publics):
+        case = next(c for c in self.EVIDENCE["cases"] if c["verifier"] == verifier and c["proof"] == proof and c["publicInputs"] == publics)
+        return case["expect"] if case["expect"] == "true" else "error: HostError: " + case["expect"]
+
+    def test_evidence_replays_against_matching_verifier_answers(self):
+        names = v.check_proof_evidence(copy.deepcopy(LOCK), copy.deepcopy(self.EVIDENCE), self.honest)
+        self.assertIn("valid", names)
+
+    def test_a_verifier_accepting_tampered_input_fails_the_replay(self):
+        with self.assertRaises(ValueError):
+            v.check_proof_evidence(copy.deepcopy(LOCK), copy.deepcopy(self.EVIDENCE), lambda *a: "true")
+
+    def test_evidence_from_other_artifacts_or_unlocked_verifier_is_refused(self):
+        ev = copy.deepcopy(self.EVIDENCE)
+        ev["provingKeySha256"] = "0" * 64
+        with self.assertRaises(ValueError):
+            v.check_proof_evidence(copy.deepcopy(LOCK), ev, self.honest)
+        ev = copy.deepcopy(self.EVIDENCE)
+        ev["cases"][0]["verifier"] = "CCW3LL6DAYESXPLCI5XVHYAM2I6XOW7PUAZLXDH4UAVETQN332B5XIHL"
+        with self.assertRaises(ValueError):
+            v.check_proof_evidence(copy.deepcopy(LOCK), ev, self.honest)
+
+
 if __name__ == "__main__":
     unittest.main()

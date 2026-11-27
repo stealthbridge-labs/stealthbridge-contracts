@@ -8,6 +8,7 @@ single-party ("local") trusted setup, or an unaudited upstream.
     python3 scripts/verify_privacy_dependency_lock.py            # offline
     python3 scripts/verify_privacy_dependency_lock.py --live     # + fetch each Testnet WASM and compare
     python3 scripts/verify_privacy_dependency_lock.py --sources  # + re-hash pinned upstream source blobs
+    python3 scripts/verify_privacy_dependency_lock.py --live-proof  # + replay the proof evidence against live verifiers (simulation)
 
 Read-only: uses `stellar contract fetch` and public GitHub reads only.
 """
@@ -118,6 +119,35 @@ def check_live(lock, fetcher=fetch_wasm):
     return results
 
 
+EVIDENCE = ROOT / "integrations/evidence/nethermind-policy-b-testnet-verifier.v1.json"
+
+
+def simulate_verify(verifier, proof, public_inputs, cli="stellar", source="sb_customer_test"):
+    """Read-only `--send=no` simulation of verifier.verify; returns stdout+stderr."""
+    r = subprocess.run([cli, "contract", "invoke", "--id", verifier, "--network", "testnet", "--source-account", source,
+                        "--send=no", "--", "verify", "--proof", json.dumps(proof), "--public_inputs", json.dumps(public_inputs)],
+                       capture_output=True, text=True, timeout=120)
+    return (r.stdout + r.stderr).strip()
+
+
+def check_proof_evidence(lock, evidence, simulate=simulate_verify):
+    known = {c["id"] for c in lock["rails"]["personal-shielded-pool"]["testnetDeployment"]["contracts"]
+             if c["role"] == "groth16-verifier"}
+    require(evidence.get("schemaVersion") == 1 and evidence.get("network") == "testnet", "bad proof evidence record")
+    arts = lock["rails"]["personal-shielded-pool"]["cryptography"]["circuitArtifacts"][evidence["circuit"]]
+    require(evidence["provingKeySha256"] == arts["proving_key.bin"] and evidence["r1csSha256"] == arts["r1cs"],
+            "proof evidence was produced with artifacts other than the locked ones")
+    names = [c["name"] for c in evidence["cases"]]
+    require("valid" in names and len(names) >= 4, "proof evidence must include a valid case and adversarial cases")
+    for case in evidence["cases"]:
+        require(case["verifier"] in known, f"case {case['name']} targets an unlocked verifier")
+        out = simulate(case["verifier"], case["proof"], case["publicInputs"])
+        last = out.splitlines()[-1] if out else ""
+        ok = (last == "true") if case["expect"] == "true" else (case["expect"] in out and last != "true")
+        require(ok, f"proof case {case['name']}: expected {case['expect']}, got {last[:120]}")
+    return names
+
+
 def github_blob_sha(repo, commit, path):
     url = f"https://api.github.com/repos/{repo}/contents/{path}?ref={commit}"
     with urlopen(Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "stealthbridge-lock-check"}), timeout=30) as r:
@@ -139,6 +169,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--live", action="store_true")
     ap.add_argument("--sources", action="store_true")
+    ap.add_argument("--live-proof", action="store_true")
     args = ap.parse_args()
     try:
         lock = validate(json.loads(LOCK.read_text()))
@@ -147,6 +178,9 @@ def main():
             print(f"live Testnet WASM matches for {len(check_live(lock))} contracts")
         if args.sources:
             print(f"upstream source blobs match: {check_sources(lock)}")
+        if args.live_proof:
+            names = check_proof_evidence(lock, json.loads(EVIDENCE.read_text()))
+            print(f"live verifier simulation matches proof evidence: {', '.join(names)}")
     except (ValueError, OSError, subprocess.SubprocessError, KeyError, json.JSONDecodeError) as e:
         print(f"privacy lock verification FAILED: {e}")
         sys.exit(1)

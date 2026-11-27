@@ -158,8 +158,27 @@
       "reproduction": {
         "poolWasm": "byte-identical",
         "poolWasmDetail": "Rebuilt from deploymentCommit with Rust 1.97.1 and the released Stellar CLI 30.0.1 (#f2a7b741; GitHub asset digest 48c70074020e09af0a3ebbd2bf62d53c9aec47935e49a112d3cd90fb4e37658f) via `stellar contract build --optimize`: pool (830977a5\u2026, 43,033 B) and pool-gvk (0b034947\u2026, 49,086 B) are byte-identical to the WASM fetched from Testnet on 2026-11-27.",
-        "proofAgainstLiveVerifier": "pending",
-        "otherContracts": "asp-membership, asp-non-membership, public-key-registry and the three Groth16 verifiers (which embed their verification key) are verified against Testnet by hash, not yet rebuilt from source."
+        "proofAgainstLiveVerifier": "verified-by-simulation",
+        "otherContracts": "asp-membership, asp-non-membership, public-key-registry and the three Groth16 verifiers (which embed their verification key) are verified against Testnet by hash, not yet rebuilt from source.",
+        "proofAgainstLiveVerifierDetail": "A Groth16 proof generated with the released policy_tx_2_2_B proving key (upstream prover, Rust 1.97.1) is accepted by the live verifier CCGCOFDO... in a read-only simulation; tampered input, tampered proof, missing input and wrong-verifier cases are rejected. Evidence and replay: integrations/evidence/nethermind-policy-b-testnet-verifier.v1.json, `verify_privacy_dependency_lock.py --live-proof`.",
+        "integrationRules": [
+          "The Groth16 verifier alone accepts non-canonical public inputs (x + r). The pool rejects them before verifying (NonCanonicalPublicInput = 13). StealthBridge must never call a verifier directly without canonicalizing public inputs."
+        ],
+        "upstreamTestSuite": {
+          "run": "2026-11-27, e2e-tests at deploymentCommit with the released Testnet proving keys, R1CS and verification keys staged in place of locally generated ones (Rust 1.97.1)",
+          "passed": 44,
+          "failed": 10,
+          "adversarialPassed": [
+            "transact_rejects_tampered_output_commitment",
+            "transact_rejects_a_settled_proof_and_its_field_aliases",
+            "a_blocklist_write_voids_a_real_proof_built_before_it",
+            "a_re_point_to_an_allowlist_without_the_leaf_refuses_a_real_proof",
+            "a_real_deposit_is_refused_while_deposits_are_paused",
+            "withheld_history::* (balances refused when chain history differs)",
+            "all_transact_graphs_prove_and_verify"
+          ],
+          "knownUpstreamFailures": "All 10 failures are tests::pool_execute::* (client deposit flow): the offline fixture's paying account holds 0 tokens (InsufficientBalance). Upstream CI fails the same tests on this commit (run 45874023128). The client deposit path is therefore not green at the pin."
+        }
       },
       "audit": {
         "status": "unaudited",
@@ -171,7 +190,8 @@
         "Upstream code unaudited.",
         "Pools, admin and association sets are operated by a third party.",
         "npm client 0.4.0 not yet bound to a source commit.",
-        "Durable note and event indexing beyond the ~7-day RPC event window not yet built."
+        "Durable note and event indexing beyond the ~7-day RPC event window not yet built.",
+        "Upstream client deposit-flow tests (pool_execute) fail at the pinned commit, upstream CI included."
       ]
     },
     "business-confidential-token": {
