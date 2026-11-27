@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-27",
+  "question": "Can an OpenZeppelin passkey smart account authorize the shielded pool's transact (deposit)?",
+  "answer": "yes",
+  "method": "In-process Soroban test (soroban-env-host 28.0.2) inside NethermindEth/stellar-private-payments@25f64658 e2e-tests, with the released Testnet proving/verification keys. No auth mocking for the transact call: the host runs the account's __check_auth, which calls the WebAuthn verifier on a P-256 assertion over the account's auth digest (preimage-v1).",
+  "artifacts": {
+    "ozAccountWasmSha256": "c514d35ea67eaea9bfc1fb3327854c0c06111bc1ddebd4fe217c504c1004b9e1",
+    "ozWebauthnVerifierWasmSha256": "e63a030d0f1a1481e36059a4837c433083b33e704c1f9625b7314795b6d72b76",
+    "source": "both fetched from Stellar Testnet on 2026-11-27",
+    "pool": "built from 25f64658 (code-identical to Testnet WASM 830977a5...)",
+    "token": "real Stellar Asset Contract (register_stellar_asset_contract_v2), not a mock",
+    "proof": "real Groth16 deposit proof (policy_tx_2_2_AB) from the released Testnet proving key"
+  },
+  "authorizationTree": {
+    "root": "pool.transact(proof, ext_data, sender=wallet)",
+    "subInvocations": [
+      "SAC.transfer(from=wallet, to=pool, amount)"
+    ],
+    "contexts": 2,
+    "contextRuleIds": [
+      0,
+      0
+    ],
+    "rule": "default rule with one External(WebAuthn verifier, P-256 point || credential id) signer"
+  },
+  "results": {
+    "deposit_with_passkey": "settled: wallet -13, pool +13",
+    "entry_without_nested_transfer": "refused",
+    "corrupted_passkey_signature": "refused",
+    "ext_data_changed_after_signing": "refused"
+  },
+  "implications": [
+    "A client must sign the full tree (transact plus the nested SAC transfer) and two context rule ids.",
+    "The signature binds proof, ext_data (recipient, amounts, encrypted outputs) and sender, so a relayer cannot redirect it.",
+    "The relay policy for privacy calls must allow exactly this tree: pool.transact on a locked pool with one nested transfer on that pool's token, from the wallet, to the pool."
+  ],
+  "test": "integrations/evidence/oz-passkey-pool-authorization.test.rs (runs inside the upstream e2e-tests crate; not compiled in this repo)"
+}
